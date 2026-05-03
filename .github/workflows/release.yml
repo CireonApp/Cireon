@@ -102,26 +102,12 @@ jobs:
             throw "No packaged JAR found in target/."
           }
 
-          "MAIN_JAR=$($jar.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          $jarAssetName = "${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}.jar"
+          $jarAssetPath = Join-Path $env:RUNNER_TEMP $jarAssetName
+          Copy-Item -Path $jar.FullName -Destination $jarAssetPath -Force
 
-      # ── 5. Package – app-image (folder layout, no installer) ──────────────
-      - name: jpackage – app-image
-        shell: pwsh
-        run: |
-          $dest = Join-Path $env:RUNNER_TEMP "dist\app-image"
-          New-Item -ItemType Directory -Path $dest -Force | Out-Null
-          jpackage `
-            --type app-image `
-            --name "${{ env.APP_NAME }}" `
-            --input target `
-            --main-jar "${{ env.MAIN_JAR }}" `
-            --main-class "${{ env.MAIN_CLASS }}" `
-            --win-console `
-            --dest $dest
-          # Zip the app-image directory so it can be uploaded as a single asset
-          $zipPath = Join-Path $env:RUNNER_TEMP "${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}-windows-app-image.zip"
-          Compress-Archive -Path (Join-Path $dest "${{ env.APP_NAME }}") -DestinationPath $zipPath
-          echo "APP_IMAGE_ZIP=$zipPath" >> $env:GITHUB_ENV
+          "MAIN_JAR=$($jar.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "JAR_ASSET=$jarAssetPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # ── 6. Package – exe installer ─────────────────────────────────────────
       - name: jpackage – exe installer
@@ -160,6 +146,6 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
           files: |
-            ${{ env.APP_IMAGE_ZIP }}
             ${{ env.INSTALLER_EXE }}
+            ${{ env.JAR_ASSET }}
 
