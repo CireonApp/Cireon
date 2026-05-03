@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*.*.*"
+   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for running'
+        required: false
+        default: 'Manual trigger'
 
 permissions:
   contents: write   # needed to create GitHub Releases and upload assets
