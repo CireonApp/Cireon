@@ -39,24 +39,70 @@ jobs:
       - name: Install WiX Toolset v3
         shell: pwsh
         run: |
-          choco install wixtoolset --version 3.14.1 -y --no-progress
-          # Reload PATH so candle / light are visible in subsequent steps
-          $wixPath = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
-          if (Test-Path $wixPath) {
-            "$wixPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          $candle = Get-Command candle.exe -ErrorAction SilentlyContinue
+          $light = Get-Command light.exe -ErrorAction SilentlyContinue
+
+          if (-not ($candle -and $light)) {
+            choco install wixtoolset -y --no-progress
+          }
+
+          # Ensure WiX bin directory is on PATH for subsequent steps.
+          $wixBinCandidates = @(
+            "C:\Program Files (x86)\WiX Toolset v3.14\bin",
+            "C:\Program Files (x86)\WiX Toolset v3.11\bin"
+          )
+          foreach ($path in $wixBinCandidates) {
+            if (Test-Path $path) {
+              "$path" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            }
+          }
+
+          $candle = Get-Command candle.exe -ErrorAction SilentlyContinue
+          $light = Get-Command light.exe -ErrorAction SilentlyContinue
+          if (-not ($candle -and $light)) {
+            throw "WiX v3 tools (candle.exe and light.exe) were not found after installation."
           }
 
       # ── 4. Resolve version ────────────────────────────────────────────────
       - name: Resolve version
         shell: pwsh
         run: |
-          $version = if ("${{ github.ref_name }}" -ne "") { "${{ github.ref_name }}" } else { "${{ inputs.tag }}" }
-          echo "VERSION=$version" >> $env:GITHUB_ENV
+          $releaseTag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
+          if ([string]::IsNullOrWhiteSpace($releaseTag)) {
+            throw "Could not resolve release tag."
+          }
+
+          $normalized = $releaseTag.Trim()
+          if ($normalized.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $normalized = $normalized.Substring(1)
+          }
+
+          if ($normalized -notmatch '^(\d+(?:\.\d+){0,3})') {
+            throw "Tag '$releaseTag' does not contain a valid jpackage app version (expected numeric like v1.2.3)."
+          }
+
+          $appVersion = $matches[1]
+          "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "APP_VERSION=$appVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # ── 5. Build with Maven ────────────────────────────────────────────────
       - name: Build with Maven
         shell: pwsh
         run: ./mvnw.cmd -q clean package -DskipTests
+
+      - name: Resolve packaged jar
+        shell: pwsh
+        run: |
+          $jar = Get-ChildItem -Path target -Filter "*.jar" |
+            Where-Object { $_.Name -notlike "*.original" } |
+            Sort-Object -Property LastWriteTime -Descending |
+            Select-Object -First 1
+
+          if (-not $jar) {
+            throw "No packaged JAR found in target/."
+          }
+
+          "MAIN_JAR=$($jar.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       # ── 5. Package – app-image (folder layout, no installer) ──────────────
       - name: jpackage – app-image
@@ -73,7 +119,7 @@ jobs:
             --win-console `
             --dest $dest
           # Zip the app-image directory so it can be uploaded as a single asset
-          $zipPath = Join-Path $env:RUNNER_TEMP "${{ env.APP_NAME }}-${{ env.VERSION }}-windows-app-image.zip"
+          $zipPath = Join-Path $env:RUNNER_TEMP "${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}-windows-app-image.zip"
           Compress-Archive -Path (Join-Path $dest "${{ env.APP_NAME }}") -DestinationPath $zipPath
           echo "APP_IMAGE_ZIP=$zipPath" >> $env:GITHUB_ENV
 
@@ -93,13 +139,13 @@ jobs:
             --win-dir-chooser `
             --win-shortcut `
             --win-menu `
-            --app-version "${{ env.VERSION }}" `
+            --app-version "${{ env.APP_VERSION }}" `
             --dest $dest
           # Locate the generated installer (jpackage names it <App>-<ver>.exe)
           $installer = Get-ChildItem -Path $dest -Filter "*.exe" | Select-Object -First 1
           if (-not $installer) { throw "No installer .exe found in $dest" }
           # Rename to a predictable, release-friendly filename
-          $finalName = "${{ env.APP_NAME }}-${{ env.VERSION }}-windows-setup.exe"
+          $finalName = "${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}-windows-setup.exe"
           $finalPath = Join-Path $dest $finalName
           Rename-Item -Path $installer.FullName -NewName $finalName
           echo "INSTALLER_EXE=$finalPath" >> $env:GITHUB_ENV
@@ -108,10 +154,10 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "${{ env.APP_NAME }} ${{ env.VERSION }}"
+          name: "${{ env.APP_NAME }} ${{ env.RELEASE_TAG }}"
           draft: false
-          prerelease: ${{ contains(env.VERSION, '-') }}   # treat v1.0.0-beta as pre-release
-          tag_name: ${{ env.VERSION }}
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}   # treat v1.0.0-beta as pre-release
+          tag_name: ${{ env.RELEASE_TAG }}
           generate_release_notes: true
           files: |
             ${{ env.APP_IMAGE_ZIP }}
