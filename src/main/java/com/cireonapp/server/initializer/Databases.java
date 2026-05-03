@@ -1,31 +1,80 @@
 package com.cireonapp.server.initializer;
 
-import com.cireonapp.server.ServerApplication;
+import com.cireonapp.server.domain.config.Config;
+import com.cireonapp.server.domain.config.ConfigConverter;
+import com.cireonapp.server.domain.media.common.ArtworkConverter;
+import com.cireonapp.server.domain.media.movie.Movie;
+import com.cireonapp.server.domain.media.source.Source;
+import com.cireonapp.server.domain.session.Session;
+import com.cireonapp.server.domain.session.SessionConverter;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserConverter;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.dizitart.no2.Nitrite;
-import org.dizitart.no2.mvstore.MVStoreModule;
+import org.dizitart.no2.mapper.jackson.JacksonMapperModule;
 import org.dizitart.no2.repository.ObjectRepository;
+import org.dizitart.no2.rocksdb.RocksDBModule;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
+import java.io.IOException;
+import java.nio.file.Files;
+
+import static com.cireonapp.server.initializer.AppPath.APP_DIR;
+
 public class Databases implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+    private static Nitrite database;
     public static ObjectRepository<User> userRepository;
+    public static ObjectRepository<Config> configRepository;
+    public static ObjectRepository<Session> sessionRepository;
+    public static ObjectRepository<Source> sourceRepository;
+    public static ObjectRepository<Movie> movieRepository;
+    private static boolean initialized = false;
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
-        ServerApplication.LOGGER.log(java.util.logging.Level.INFO, "Initializing databases...");
+        try {
+            bootstrap();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
-        MVStoreModule storeModule = MVStoreModule.withConfig()
-                .filePath("database.db")
+    public static synchronized void bootstrap() throws IOException {
+        if (initialized) return;
+        initialized = true;
+        if (!Files.exists(APP_DIR.resolve("data")))
+            Files.createDirectory(APP_DIR.resolve("data"));
+
+        RocksDBModule storeModule = RocksDBModule.withConfig()
+                .filePath(APP_DIR.resolve("data/database").toString())
                 .build();
 
-        Nitrite userDB = Nitrite.builder()
+
+
+        database = Nitrite.builder()
                 .loadModule(storeModule)
-                .registerEntityConverter(new UserConverter())
+                .loadModule(new JacksonMapperModule(new JavaTimeModule()))
+//                .registerEntityConverter(new UserConverter())
+//                .registerEntityConverter(new ConfigConverter())
+//                .registerEntityConverter(new SessionConverter())
+//                .registerEntityConverter(new ArtworkConverter())
                 .openOrCreate();
 
-        userRepository = userDB.getRepository(User.class,"users");
 
+        userRepository = database.getRepository(User.class, "users");
+        configRepository = database.getRepository(Config.class, "config");
+        sessionRepository = database.getRepository(Session.class, "sessions");
+        sourceRepository = database.getRepository(Source.class, "sources");
+        movieRepository = database.getRepository(Movie.class, "movies");
+        firstTimeSetup();
+    }
+
+    private static void firstTimeSetup() {
+        if (!configRepository.find().toSet().isEmpty()) return;
+        Config config = new Config();
+        //read line to ask for settings.
+
+        configRepository.insert(config);
     }
 }

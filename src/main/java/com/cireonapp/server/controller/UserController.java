@@ -1,8 +1,9 @@
 package com.cireonapp.server.controller;
 
+import com.cireonapp.server.domain.config.ConfigManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
-import com.cireonapp.server.dto.ErrorResponseDto;
+import com.cireonapp.server.dto.CommonResponseDto;
 import com.cireonapp.server.dto.LoginResponseDto;
 import com.cireonapp.server.dto.NewUserRequestDto;
 import jakarta.validation.Valid;
@@ -17,23 +18,32 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/user")
+@RequestMapping("/api/user")
 public class UserController {
 
     @PostMapping(value = "/create")
     public ResponseEntity<?> createUser(@Valid @RequestBody NewUserRequestDto user) {
-        User newUser = new User(user.username,user.password,user.displayName);
 
-        boolean success = UserManager.createUser(newUser);
-        if(success)
+        int maxUsers = ConfigManager.get().getMaxUsers();
+        int userCount = UserManager.getAll().size();
+
+        if(userCount >= maxUsers) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Maximum number of users reached. Max users: " + maxUsers);
+        }
+
+        User newUser = new User(user.username, user.password, user.displayName);
+
+        boolean success = UserManager.create(newUser);
+        if (success)
             return ResponseEntity.status(HttpStatus.CREATED).body(new LoginResponseDto(newUser.getDisplayName(), newUser.getPermissions()));
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorResponseDto("An error occurred while creating the user! Please check the console for more details."));
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(CommonResponseDto.Error.INTERNAL_SERVER_ERROR);
+
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Map<String,String> handleValidationExceptions(MethodArgumentNotValidException ex){
-        Map<String,String> errors = new java.util.HashMap<>();
+    public Map<String, String> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        Map<String, String> errors = new java.util.HashMap<>();
 
         ex.getBindingResult().getAllErrors().forEach((error) -> {
             String fieldName = ((org.springframework.validation.FieldError) error).getField();
@@ -43,22 +53,23 @@ public class UserController {
 
         return errors;
     }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(UniqueConstraintException.class)
-    public ResponseEntity<?> handleUniqueConstraintExceptions(){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDto("A user with this Username already exists!"));
+    public ResponseEntity<?> handleUniqueConstraintExceptions() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.USERNAME_ALREADY_EXISTS);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<?> handleMessageNotReadableExceptions(){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDto("There was an error parsing the request body!"));
+    public ResponseEntity<?> handleMessageNotReadableExceptions() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.JSON_PARSING_ERROR);
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<?> handleMediaTypeNotSupportedExceptions(){
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDto("Body must be in JSON format!"));
+    public ResponseEntity<?> handleMediaTypeNotSupportedExceptions() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.INVALID_JSON_BODY);
     }
 
 }
