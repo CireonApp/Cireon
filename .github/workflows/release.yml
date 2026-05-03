@@ -166,6 +166,10 @@ jobs:
           distribution: temurin
           cache: maven
 
+      - name: Ensure Maven wrapper is executable
+        shell: bash
+        run: chmod +x ./mvnw
+
       - name: Build with Maven
         shell: bash
         run: ./mvnw -q clean package -DskipTests
