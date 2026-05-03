@@ -13,14 +13,46 @@ permissions:
 
 env:
   APP_NAME: CireonBackend
-  MAIN_JAR: server-0.0.1-SNAPSHOT.jar
   MAIN_CLASS: org.springframework.boot.loader.launch.JarLauncher
   JAVA_VERSION: "21"
 
 jobs:
-  build-and-release:
-    name: Build & Release (Windows)
+  resolve-version:
+    name: Resolve version
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      app_version: ${{ steps.resolve.outputs.app_version }}
+    steps:
+      - name: Resolve version
+        id: resolve
+        shell: pwsh
+        run: |
+          $releaseTag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
+          if ([string]::IsNullOrWhiteSpace($releaseTag)) {
+            throw "Could not resolve release tag."
+          }
+
+          $normalized = $releaseTag.Trim()
+          if ($normalized.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
+            $normalized = $normalized.Substring(1)
+          }
+
+          if ($normalized -notmatch '^(\d+(?:\.\d+){0,3})') {
+            throw "Tag '$releaseTag' does not contain a valid jpackage app version (expected numeric like v1.2.3)."
+          }
+
+          $appVersion = $matches[1]
+          "release_tag=$releaseTag" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          "app_version=$appVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+
+  build-exe-windows:
+    name: Build Windows EXE
+    needs: resolve-version
     runs-on: windows-latest
+    env:
+      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
+      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
 
     steps:
       # ── 1. Checkout ────────────────────────────────────────────────────────
@@ -63,29 +95,7 @@ jobs:
             throw "WiX v3 tools (candle.exe and light.exe) were not found after installation."
           }
 
-      # ── 4. Resolve version ────────────────────────────────────────────────
-      - name: Resolve version
-        shell: pwsh
-        run: |
-          $releaseTag = if ("${{ github.event_name }}" -eq "workflow_dispatch") { "${{ inputs.tag }}" } else { "${{ github.ref_name }}" }
-          if ([string]::IsNullOrWhiteSpace($releaseTag)) {
-            throw "Could not resolve release tag."
-          }
-
-          $normalized = $releaseTag.Trim()
-          if ($normalized.StartsWith("v", [System.StringComparison]::OrdinalIgnoreCase)) {
-            $normalized = $normalized.Substring(1)
-          }
-
-          if ($normalized -notmatch '^(\d+(?:\.\d+){0,3})') {
-            throw "Tag '$releaseTag' does not contain a valid jpackage app version (expected numeric like v1.2.3)."
-          }
-
-          $appVersion = $matches[1]
-          "RELEASE_TAG=$releaseTag" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "APP_VERSION=$appVersion" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-      # ── 5. Build with Maven ────────────────────────────────────────────────
+      # ── 4. Build with Maven ────────────────────────────────────────────────
       - name: Build with Maven
         shell: pwsh
         run: ./mvnw.cmd -q clean package -DskipTests
@@ -102,14 +112,9 @@ jobs:
             throw "No packaged JAR found in target/."
           }
 
-          $jarAssetName = "${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}.jar"
-          $jarAssetPath = Join-Path $env:RUNNER_TEMP $jarAssetName
-          Copy-Item -Path $jar.FullName -Destination $jarAssetPath -Force
-
           "MAIN_JAR=$($jar.Name)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "JAR_ASSET=$jarAssetPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
-      # ── 6. Package – exe installer ─────────────────────────────────────────
+      # ── 5. Package – exe installer ─────────────────────────────────────────
       - name: jpackage – exe installer
         shell: pwsh
         run: |
@@ -134,18 +139,88 @@ jobs:
           $finalName = "${{ env.APP_NAME }}-${{ env.RELEASE_TAG }}-windows-setup.exe"
           $finalPath = Join-Path $dest $finalName
           Rename-Item -Path $installer.FullName -NewName $finalName
-          echo "INSTALLER_EXE=$finalPath" >> $env:GITHUB_ENV
+          "INSTALLER_EXE=$finalPath" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: ${{ env.INSTALLER_EXE }}
+          if-no-files-found: error
+
+  build-jar:
+    name: Build JAR
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: maven
+
+      - name: Build with Maven
+        shell: bash
+        run: ./mvnw -q clean package -DskipTests
+
+      - name: Prepare JAR artifact
+        shell: bash
+        run: |
+          jar_path="$(ls -t target/*.jar | grep -v '\\.original$' | head -n1)"
+          if [ -z "$jar_path" ]; then
+            echo "No packaged JAR found in target/." >&2
+            exit 1
+          fi
+
+          jar_asset="$RUNNER_TEMP/${APP_NAME}-${RELEASE_TAG}.jar"
+          cp "$jar_path" "$jar_asset"
+          echo "JAR_ASSET=$jar_asset" >> "$GITHUB_ENV"
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: ${{ env.JAR_ASSET }}
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish release
+    needs:
+      - resolve-version
+      - build-exe-windows
+      - build-jar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download EXE artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe
+          path: release-assets
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: release-assets
 
       # ── 7. Create GitHub Release and upload assets ─────────────────────────
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "${{ env.APP_NAME }} ${{ env.RELEASE_TAG }}"
+          name: "${{ env.APP_NAME }} ${{ needs.resolve-version.outputs.release_tag }}"
           draft: false
-          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}   # treat v1.0.0-beta as pre-release
-          tag_name: ${{ env.RELEASE_TAG }}
+          prerelease: ${{ contains(needs.resolve-version.outputs.release_tag, '-') }}   # treat v1.0.0-beta as pre-release
+          tag_name: ${{ needs.resolve-version.outputs.release_tag }}
           generate_release_notes: true
           files: |
-            ${{ env.INSTALLER_EXE }}
-            ${{ env.JAR_ASSET }}
+            release-assets/*.exe
+            release-assets/*.jar
 
