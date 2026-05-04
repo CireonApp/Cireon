@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static com.cireonapp.server.controller.AuthenticationController.AUTH_COOKIE_NAME;
+import static com.cireonapp.server.controller.backend.AuthenticationController.AUTH_COOKIE_NAME;
 
 public class CookieHelper {
     public static Optional<Cookie> getAuthCookie(HttpServletRequest request) {

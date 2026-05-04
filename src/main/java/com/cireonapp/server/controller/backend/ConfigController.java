@@ -1,4 +1,4 @@
-package com.cireonapp.server.controller;
+package com.cireonapp.server.controller.backend;
 
 import com.cireonapp.server.domain.config.Config;
 import com.cireonapp.server.domain.config.ConfigManager;
@@ -8,16 +8,13 @@ import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.CommonResponseDto;
-import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.dto.ResponseDto;
 import com.cireonapp.server.dto.UpdateConfigRequestDto;
 import com.cireonapp.server.util.CookieHelper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
-import org.dizitart.no2.exceptions.UniqueConstraintException;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -26,8 +23,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 import java.util.Optional;
-
-import static com.cireonapp.server.util.CookieHelper.getAuthCookie;
 
 @RestController
 @RequestMapping("/api/config")

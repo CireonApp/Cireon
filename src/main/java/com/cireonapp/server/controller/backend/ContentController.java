@@ -1,12 +1,7 @@
-package com.cireonapp.server.controller;
+package com.cireonapp.server.controller.backend;
 
 import com.cireonapp.server.domain.media.movie.MovieManager;
-import com.cireonapp.server.domain.media.source.ExternalMetadataKeys;
-import com.cireonapp.server.domain.media.source.Source;
-import com.cireonapp.server.domain.media.source.SourceManager;
-import com.cireonapp.server.domain.media.source.SourceType;
 import com.cireonapp.server.dto.ErrorResponseDto;
-import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.service.StreamingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -16,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.io.FileNotFoundException;
-import java.nio.file.Paths;
 
 
 @RestController

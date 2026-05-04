@@ -1,6 +1,5 @@
-package com.cireonapp.server.controller;
+package com.cireonapp.server.controller.backend;
 
-import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.Authentication;
 import com.cireonapp.server.domain.session.Session;
 import com.cireonapp.server.domain.session.SessionManager;
@@ -16,7 +15,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.context.request.RequestContextHolder;
 
 import java.util.Base64;
 import java.util.Optional;

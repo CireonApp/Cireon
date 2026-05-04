@@ -1,6 +1,5 @@
-package com.cireonapp.server.controller;
+package com.cireonapp.server.controller.backend;
 
-import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.session.Session;
 import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.domain.user.User;
@@ -19,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Objects;
 import java.util.Optional;
 
-import static com.cireonapp.server.controller.AuthenticationController.AUTH_COOKIE_NAME;
+import static com.cireonapp.server.controller.backend.AuthenticationController.AUTH_COOKIE_NAME;
 
 @RestController
 @RequestMapping("/api/auth/session")

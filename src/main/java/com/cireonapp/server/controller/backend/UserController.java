@@ -1,4 +1,4 @@
-package com.cireonapp.server.controller;
+package com.cireonapp.server.controller.backend;
 
 import com.cireonapp.server.domain.config.ConfigManager;
 import com.cireonapp.server.domain.user.User;
