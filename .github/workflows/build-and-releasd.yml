@@ -1,0 +1,160 @@
+name: Build & Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Version tag (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: CireonBackend
+  MAIN_CLASS: org.springframework.boot.loader.launch.JarLauncher
+  JAVA_VERSION: "21"
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      release_tag: ${{ steps.resolve.outputs.release_tag }}
+      app_version: ${{ steps.resolve.outputs.app_version }}
+    steps:
+      - id: resolve
+        shell: bash
+        run: |
+          TAG="${{ inputs.tag }}"
+          CLEAN="${TAG#v}"
+          VERSION=$(echo "$CLEAN" | grep -oE '^[0-9]+(\.[0-9]+){0,3}')
+          echo "release_tag=$TAG" >> $GITHUB_OUTPUT
+          echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+
+  build:
+    needs: resolve-version
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
+      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+
+      - name: Make mvnw executable (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: chmod +x ./mvnw
+
+      - name: Build JAR
+        run: |
+          ./mvnw clean package -DskipTests
+
+      - name: Locate JAR
+        shell: bash
+        run: |
+          JAR=$(ls -t target/*.jar | grep -v '\.original$' | head -n1)
+          echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
+
+      - name: Install WiX (Windows only)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install wixtoolset -y --no-progress
+          $wixPath = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
+          if (Test-Path $wixPath) {
+            $wixPath | Out-File -FilePath $env:GITHUB_PATH -Append
+          }
+
+      - name: Package app
+        shell: bash
+        run: |
+          mkdir -p dist
+
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            jpackage \
+              --type exe \
+              --name "$APP_NAME" \
+              --input target \
+              --main-jar "$JAR_NAME" \
+              --main-class "$MAIN_CLASS" \
+              --win-shortcut \
+              --win-menu \
+              --app-version "$APP_VERSION" \
+              --dest dist
+
+          elif [ "$RUNNER_OS" = "Linux" ]; then
+            jpackage \
+              --type deb \
+              --name "$APP_NAME" \
+              --input target \
+              --main-jar "$JAR_NAME" \
+              --main-class "$MAIN_CLASS" \
+              --app-version "$APP_VERSION" \
+              --dest dist
+
+          elif [ "$RUNNER_OS" = "macOS" ]; then
+            jpackage \
+              --type dmg \
+              --name "$APP_NAME" \
+              --input target \
+              --main-jar "$JAR_NAME" \
+              --main-class "$MAIN_CLASS" \
+              --app-version "$APP_VERSION" \
+              --dest dist
+          fi
+
+      - name: Rename outputs
+        shell: bash
+        run: |
+          mkdir -p release
+          for f in dist/*; do
+            ext="${f##*.}"
+            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
+            mv "$f" "release/$new"
+          done
+
+      - name: Prepare JAR artifact
+        shell: bash
+        run: |
+          mkdir -p release
+          cp target/*.jar release/$APP_NAME-$RELEASE_TAG.jar
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ runner.os }}
+          path: release/*
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Flatten files
+        run: |
+          mkdir flat
+          find release-assets -type f -exec cp {} flat/ \;
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag }}
+          name: "${{ env.APP_NAME }} ${{ inputs.tag }}"
+          generate_release_notes: true
+          files: flat/*
