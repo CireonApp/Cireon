@@ -43,9 +43,8 @@ public class ServerApplication {
         app.addInitializers(new FileWatcher(),new SourceSubscription());
 
         application = app.run(args);
-
-
     }
+    
 
     public static void restart() {
         application.restart();
