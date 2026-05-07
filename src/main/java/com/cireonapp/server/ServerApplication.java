@@ -6,17 +6,18 @@ import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.initializer.SourceSubscription;
 import com.cireonapp.server.util.DataDirHelper;
+import jakarta.annotation.PreDestroy;
+import org.apache.maven.model.Model;
+import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import java.nio.file.Path;
-import java.security.cert.X509Certificate;
+import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import static com.cireonapp.server.initializer.AppPath.APP_DIR;
 
 @SpringBootApplication
 public class ServerApplication {
@@ -26,17 +27,21 @@ public class ServerApplication {
     public static Logger LOGGER = Logger.getLogger("Cireon Backend Server");
 
     public static void main(String[] args) throws Exception {
+        MavenXpp3Reader reader = new MavenXpp3Reader();
+        Model model = reader.read(new FileReader("pom.xml"));
+
+
         DataDirHelper.initializeDataDir();
         Databases.bootstrap();
 
         SpringApplication app = new SpringApplication(ServerApplication.class);
 
-        app.addInitializers(new Databases());
-
         Config config = ConfigManager.get();
 
         Map<String, Object> props = new HashMap<>();
         props.put("server.port", config.getPort());
+        props.put("application.title", model.getName());
+        props.put("application.version", model.getVersion());
 
         app.setDefaultProperties(props);
 
@@ -44,7 +49,8 @@ public class ServerApplication {
 
         application = app.run(args);
     }
-    
+
+
 
     public static void restart() {
         application.restart();

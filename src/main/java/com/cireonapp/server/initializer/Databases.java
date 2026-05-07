@@ -1,28 +1,25 @@
 package com.cireonapp.server.initializer;
 
 import com.cireonapp.server.domain.config.Config;
-import com.cireonapp.server.domain.config.ConfigConverter;
-import com.cireonapp.server.domain.media.common.ArtworkConverter;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.source.Source;
 import com.cireonapp.server.domain.session.Session;
-import com.cireonapp.server.domain.session.SessionConverter;
 import com.cireonapp.server.domain.user.User;
-import com.cireonapp.server.domain.user.UserConverter;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import jakarta.annotation.PreDestroy;
 import org.dizitart.no2.Nitrite;
 import org.dizitart.no2.mapper.jackson.JacksonMapperModule;
+import org.dizitart.no2.mvstore.MVStoreModule;
 import org.dizitart.no2.repository.ObjectRepository;
-import org.dizitart.no2.rocksdb.RocksDBModule;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
 
 import static com.cireonapp.server.initializer.AppPath.APP_DIR;
 
-public class Databases implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+@Component
+public class Databases {
     private static Nitrite database;
     public static ObjectRepository<User> userRepository;
     public static ObjectRepository<Config> configRepository;
@@ -31,14 +28,6 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
     public static ObjectRepository<Movie> movieRepository;
     private static boolean initialized = false;
 
-    @Override
-    public void initialize(ConfigurableApplicationContext applicationContext) {
-        try {
-            bootstrap();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     public static synchronized void bootstrap() throws IOException {
         if (initialized) return;
@@ -46,14 +35,14 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
         if (!Files.exists(APP_DIR.resolve("data")))
             Files.createDirectory(APP_DIR.resolve("data"));
 
-        RocksDBModule storeModule = RocksDBModule.withConfig()
+        MVStoreModule storeModule = MVStoreModule.withConfig()
                 .filePath(APP_DIR.resolve("data/database").toString())
                 .build();
 
 
 
         database = Nitrite.builder()
-                .loadModule(storeModule)
+//                .loadModule(storeModule)
                 .loadModule(new JacksonMapperModule(new JavaTimeModule()))
 //                .registerEntityConverter(new UserConverter())
 //                .registerEntityConverter(new ConfigConverter())
@@ -76,5 +65,12 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
         //read line to ask for settings.
 
         configRepository.insert(config);
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        if (database != null && !database.isClosed()) {
+            database.close(); // Crucial to release the file lock for DevTools restart
+        }
     }
 }
