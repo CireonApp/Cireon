@@ -135,23 +135,26 @@ jobs:
           mkdir -p dist
           JAR_NAME=$(basename $(ls target/*.jar))
           jpackage \
-            --type msi \
+            --type exe \
             --name "$APP_NAME" \
             --input target \
             --main-jar "$JAR_NAME" \
             --main-class "$MAIN_CLASS" \
             --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
+            --description "Cireon Backend Application" \
+            --license-file LICENSE \
             --win-console \
             --win-shortcut \
             --win-menu \
             --win-dir-chooser \
+            --win-upgrade-uuid "8f7f6f86-71ef-406c-9ac0-32efb9519901" \
             --dest dist
       - name: Rename outputs
         shell: bash
         run: |
           mkdir -p release
-          mv dist/*.msi "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.msi"
+          mv dist/*.exe "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.exe"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -186,6 +189,7 @@ jobs:
             --main-class "$MAIN_CLASS" \
             --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
+            --license-file LICENSE \
             --linux-package-name cireon-backend \
             --dest dist
       - name: Rename outputs
@@ -227,6 +231,7 @@ jobs:
             --main-class "$MAIN_CLASS" \
             --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
+            --license-file LICENSE \
             --dest dist
       - name: Rename outputs
         shell: bash
