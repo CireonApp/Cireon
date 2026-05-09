@@ -195,10 +195,10 @@ jobs:
             --description "Cireon Backend Application" \
             --arguments "--spring.profiles.active=prod" \
             --win-shortcut \
-            --win-dir-chooser \
             --win-menu \
             --win-menu-group "Cireon" \
             --win-console \
+            --win-per-user-install \
             --dest dist
 
       - name: Rename outputs
