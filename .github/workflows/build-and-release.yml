@@ -179,12 +179,12 @@ jobs:
             $wixPath | Out-File -FilePath $env:GITHUB_PATH -Append
           }
 
-      - name: Package app
+      - name: Build Windows app image
         shell: bash
         run: |
-          mkdir -p dist
+          mkdir -p dist/image
           jpackage \
-            --type exe \
+            --type app-image \
             --name "$APP_NAME" \
             --input target \
             --main-jar "$JAR_NAME" \
@@ -194,28 +194,47 @@ jobs:
             --license-file LICENSE \
             --description "Cireon Backend Application" \
             --arguments "--spring.profiles.active=prod" \
+            --win-console \
+            --dest dist/image
+
+      - name: Package Windows installer
+        shell: bash
+        run: |
+          mkdir -p dist/installer
+          jpackage \
+            --type exe \
+            --name "$APP_NAME" \
+            --app-image "dist/image/$APP_NAME" \
+            --app-version "$APP_VERSION" \
+            --vendor "Cireon" \
+            --license-file LICENSE \
+            --description "Cireon Backend Application" \
             --win-shortcut \
             --win-menu \
             --win-menu-group "Cireon" \
-            --win-console \
             --win-per-user-install \
-            --dest dist
+            --dest dist/installer
 
-      - name: Rename outputs
-        shell: bash
+      - name: Prepare Windows release artifacts
+        shell: pwsh
         run: |
-          mkdir -p release
-          shopt -s nullglob
-          files=(dist/*)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No artifacts"
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            ext="${f##*.}"
-            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
-            mv "$f" "release/$new"
-          done
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+
+          $appImagePath = Join-Path "dist/image" $env:APP_NAME
+          if (-not (Test-Path $appImagePath)) {
+            throw "App image not found at $appImagePath"
+          }
+
+          $portableZip = Join-Path "release" ("{0}-{1}-Windows-portable.zip" -f $env:APP_NAME, $env:RELEASE_TAG)
+          Compress-Archive -Path (Join-Path $appImagePath '*') -DestinationPath $portableZip -Force
+
+          $installer = Get-ChildItem -Path "dist/installer" -Filter *.exe | Select-Object -First 1
+          if (-not $installer) {
+            throw "Windows installer exe not found"
+          }
+
+          $installerTarget = Join-Path "release" ("{0}-{1}-Windows-installer.exe" -f $env:APP_NAME, $env:RELEASE_TAG)
+          Copy-Item $installer.FullName $installerTarget -Force
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
