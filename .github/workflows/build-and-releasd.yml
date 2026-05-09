@@ -118,6 +118,11 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
+      - name: Set release JAR default profile to prod
+        shell: bash
+        run: |
+          sed -i 's/^spring\.profiles\.default=.*/spring.profiles.default=prod/' src/main/resources/application.properties
+
       - name: Build JAR
         run: ./mvnw package -DskipTests
 
@@ -188,7 +193,7 @@ jobs:
             --vendor "Cireon" \
             --license-file LICENSE \
             --description "Cireon Backend Application" \
-            --java-options "-Dspring.profiles.active=prod" \
+            --arguments "--spring.profiles.active=prod" \
             --win-shortcut \
             --win-dir-chooser \
             --win-menu \
@@ -261,7 +266,7 @@ jobs:
             --vendor "Cireon" \
             --license-file LICENSE \
             --description "Cireon Backend Application" \
-            --java-options "-Dspring.profiles.active=prod" \
+            --arguments "--spring.profiles.active=prod" \
             --linux-package-name cireon-backend \
             --linux-deb-maintainer "Cireon Team" \
             --linux-menu-group "Application" \
@@ -332,7 +337,7 @@ jobs:
             --vendor "Cireon" \
             --license-file LICENSE \
             --description "Cireon Backend Application" \
-            --java-options "-Dspring.profiles.active=prod" \
+            --arguments "--spring.profiles.active=prod" \
             --mac-package-identifier com.cireon.backend \
             --mac-package-name "Cireon Backend" \
             --dest dist
