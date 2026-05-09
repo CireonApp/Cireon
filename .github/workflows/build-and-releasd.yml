@@ -4,9 +4,14 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Version tag (e.g. v1.0.0)"
+        description: Version tag (example v1.0.0 or v0.1.0-alpha)
         required: true
-        default: "v1.0.0"
+        default: v1.0.0
+
+      target:
+        description: Build targets comma separated (all, windows, linux, mac)
+        required: true
+        default: all
 
 permissions:
   contents: write
@@ -22,18 +27,33 @@ jobs:
     outputs:
       release_tag: ${{ steps.resolve.outputs.release_tag }}
       app_version: ${{ steps.resolve.outputs.app_version }}
+      major_version: ${{ steps.resolve.outputs.major_version }}
+      targets: ${{ steps.resolve.outputs.targets }}
     steps:
       - id: resolve
         shell: bash
         run: |
           TAG="${{ inputs.tag }}"
+          TARGETS="${{ inputs.target }}"
+
           CLEAN="${TAG#v}"
-          VERSION=$(echo "$CLEAN" | grep -oE '^[0-9]+(\.[0-9]+){0,3}')
+          VERSION=$(echo "$CLEAN" | grep -oE '^[0-9]+(\.[0-9]+){0,2}')
+
+          if [ -z "$VERSION" ]; then
+            echo "Invalid version: $TAG"
+            exit 1
+          fi
+
+          MAJOR=$(echo "$VERSION" | cut -d'.' -f1)
+
           echo "release_tag=$TAG" >> $GITHUB_OUTPUT
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
+          echo "major_version=$MAJOR" >> $GITHUB_OUTPUT
+          echo "targets=$TARGETS" >> $GITHUB_OUTPUT
 
   build:
     needs: resolve-version
+
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
@@ -43,6 +63,8 @@ jobs:
     env:
       RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
       APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
+      MAJOR_VERSION: ${{ needs.resolve-version.outputs.major_version }}
+      TARGETS: ${{ needs.resolve-version.outputs.targets }}
 
     steps:
       - uses: actions/checkout@v4
@@ -53,13 +75,12 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
 
-      - name: Make mvnw executable (Linux/macOS)
+      - name: Make mvnw executable
         if: runner.os != 'Windows'
         run: chmod +x ./mvnw
 
       - name: Build JAR
-        run: |
-          ./mvnw clean package -DskipTests
+        run: ./mvnw clean package -DskipTests
 
       - name: Locate JAR
         shell: bash
@@ -76,6 +97,33 @@ jobs:
           if (Test-Path $wixPath) {
             $wixPath | Out-File -FilePath $env:GITHUB_PATH -Append
           }
+
+      - name: Check target filter
+        shell: bash
+        run: |
+          OS="${RUNNER_OS}"
+          RAW="${TARGETS}"
+
+          IFS=',' read -ra LIST <<< "$RAW"
+
+          ALLOW=0
+
+          for t in "${LIST[@]}"; do
+            t=$(echo "$t" | xargs)
+
+            if [ "$t" = "all" ]; then
+              ALLOW=1
+            fi
+
+            if [ "$t" = "windows" ] && [ "$OS" = "Windows" ]; then ALLOW=1; fi
+            if [ "$t" = "linux" ] && [ "$OS" = "Linux" ]; then ALLOW=1; fi
+            if [ "$t" = "mac" ] && [ "$OS" = "macOS" ]; then ALLOW=1; fi
+          done
+
+          if [ "$ALLOW" -ne 1 ]; then
+            echo "Skipping $OS"
+            exit 0
+          fi
 
       - name: Package app
         shell: bash
@@ -105,6 +153,11 @@ jobs:
               --dest dist
 
           elif [ "$RUNNER_OS" = "macOS" ]; then
+            if [ "$MAJOR_VERSION" -eq 0 ]; then
+              echo "Skipping macOS build for version $APP_VERSION"
+              exit 0
+            fi
+
             jpackage \
               --type dmg \
               --name "$APP_NAME" \
