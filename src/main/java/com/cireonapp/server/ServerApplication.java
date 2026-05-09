@@ -6,15 +6,10 @@ import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.initializer.SourceSubscription;
 import com.cireonapp.server.util.DataDirHelper;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.info.BuildProperties;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import java.io.FileReader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;

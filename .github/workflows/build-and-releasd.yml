@@ -135,26 +135,27 @@ jobs:
         run: |
           mkdir -p dist
 
+          # Common jpackage options
+          COMMON_OPTS="--name $APP_NAME --input target --main-jar $JAR_NAME --main-class $MAIN_CLASS --app-version $APP_VERSION --vendor 'Cireon' --license-file LICENSE --description 'Cireon Backend Application'"
+
           if [ "$RUNNER_OS" = "Windows" ]; then
             jpackage \
               --type exe \
-              --name "$APP_NAME" \
-              --input target \
-              --main-jar "$JAR_NAME" \
-              --main-class "$MAIN_CLASS" \
+              $COMMON_OPTS \
               --win-shortcut \
+              --win-dir-chooser \
               --win-menu \
-              --app-version "$APP_VERSION" \
+              --win-menu-group "Cireon" \
+              --win-console \
               --dest dist
 
           elif [ "$RUNNER_OS" = "Linux" ]; then
             jpackage \
               --type deb \
-              --name "$APP_NAME" \
-              --input target \
-              --main-jar "$JAR_NAME" \
-              --main-class "$MAIN_CLASS" \
-              --app-version "$APP_VERSION" \
+              $COMMON_OPTS \
+              --linux-package-name cireon-backend \
+              --linux-deb-maintainer "Cireon Team" \
+              --linux-menu-group "Application" \
               --dest dist
 
           elif [ "$RUNNER_OS" = "macOS" ]; then
@@ -166,11 +167,9 @@ jobs:
 
             jpackage \
               --type dmg \
-              --name "$APP_NAME" \
-              --input target \
-              --main-jar "$JAR_NAME" \
-              --main-class "$MAIN_CLASS" \
-              --app-version "$APP_VERSION" \
+              $COMMON_OPTS \
+              --mac-package-identifier com.cireon.backend \
+              --mac-package-name "Cireon Backend" \
               --dest dist
           fi
 
