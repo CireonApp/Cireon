@@ -51,13 +51,16 @@ public class ServerApplication {
 
             app.addInitializers(new FileWatcher(), new SourceSubscription());
             application = app.run(args);
+            LOGGER.info("Server started on port " + config.getPort());
         } catch (Throwable e) {
             // DevTools throws SilentExitException intentionally on restart — let it through
-            if (e.getClass().getName().contains("SilentExitException")) throw e;
-            LOGGER.error("Fatal error during startup: {}", e.getMessage(), e);
-            System.out.println("\nPress Enter to close...");
-            new Scanner(System.in).nextLine();
-            System.exit(1);
+            if (!e.getClass().getName().contains("SilentExitException")) {
+                if (e.getClass().getName().contains("PortInUseException"))
+                    LOGGER.warn("Port is already in use!");
+                System.out.println("\nPress Enter to close...");
+                new Scanner(System.in).nextLine();
+                System.exit(1);
+            }
         }
     }
 
