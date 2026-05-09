@@ -142,7 +142,6 @@ jobs:
             --main-class "$MAIN_CLASS" \
             --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
-            --description "Cireon Backend Application" \
             --win-console \
             --win-shortcut \
             --win-menu \
@@ -152,9 +151,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          for f in dist/*.exe; do
-            mv "$f" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.exe"
-          done
+          mv dist/*.exe "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.exe"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -195,9 +192,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          for f in dist/*.deb; do
-            mv "$f" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Linux.deb"
-          done
+          mv dist/*.deb "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Linux.deb"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -237,9 +232,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          for f in dist/*.dmg; do
-            mv "$f" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-macOS.dmg"
-          done
+          mv dist/*.dmg "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-macOS.dmg"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
