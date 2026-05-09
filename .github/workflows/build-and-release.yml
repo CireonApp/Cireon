@@ -68,26 +68,16 @@ jobs:
 
           if [ "$BUILD_WINDOWS" = false ] && [ "$BUILD_LINUX" = false ] && [ "$BUILD_MAC" = false ]; then
             echo "Invalid target input: $TARGETS"
-            echo "Use one or more of: windows,linux,mac,all"
             exit 1
           fi
 
-          # If tag is empty, extract version from pom.xml (skip parent version, get project version)
           if [ -z "$TAG" ]; then
-            echo "Extracting version from pom.xml..."
             POMVERSION=$(sed -n '/<\/parent>/,/<\/project>/p' pom.xml | grep -m1 '<version>' | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
             TAG="v$POMVERSION"
-            echo "Automatically using version from pom.xml: $TAG"
           fi
 
           CLEAN="${TAG#v}"
           VERSION=$(echo "$CLEAN" | grep -oE '^[0-9]+(\.[0-9]+){0,2}')
-
-          if [ -z "$VERSION" ]; then
-            echo "Invalid version: $TAG"
-            exit 1
-          fi
-
           MAJOR=$(echo "$VERSION" | cut -d'.' -f1)
 
           echo "release_tag=$TAG" >> $GITHUB_OUTPUT
@@ -100,39 +90,24 @@ jobs:
 
   build-jar:
     needs: resolve-version
-    if: needs.resolve-version.outputs.build_windows == 'true' || needs.resolve-version.outputs.build_linux == 'true' || needs.resolve-version.outputs.build_mac == 'true'
     runs-on: ubuntu-latest
-
-    env:
-      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
           cache: maven
-
-      - name: Make mvnw executable
-        run: chmod +x ./mvnw
-
-      - name: Set release JAR default profile to prod
-        shell: bash
-        run: |
-          sed -i 's/^spring\.profiles\.default=.*/spring.profiles.default=prod/' src/main/resources/application.properties
-
       - name: Build JAR
-        run: ./mvnw package -DskipTests
-
+        run: |
+          chmod +x ./mvnw
+          sed -i 's/^spring\.profiles\.default=.*/spring.profiles.default=prod/' src/main/resources/application.properties
+          ./mvnw package -DskipTests
       - name: Prepare JAR artifact
-        shell: bash
         run: |
           mkdir -p release
           JAR=$(ls -t target/*.jar | grep -v '\.original$' | head -n1)
-          cp "$JAR" "release/$APP_NAME-$RELEASE_TAG.jar"
-
+          cp "$JAR" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}.jar"
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
@@ -143,80 +118,43 @@ jobs:
     needs: [resolve-version, build-jar]
     if: needs.resolve-version.outputs.build_windows == 'true'
     runs-on: windows-latest
-
-    env:
-      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
-      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
           name: app-jar
           path: target
-
-      - name: Locate JAR
-        shell: bash
-        run: |
-          JAR=$(ls -t target/*.jar | head -n1)
-          echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
-
-      - name: Install WiX
-        shell: pwsh
-        run: |
-          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
-            choco install wixtoolset -y --no-progress
-          }
-          $wixPath = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
-          if (Test-Path $wixPath) {
-            $wixPath | Out-File -FilePath $env:GITHUB_PATH -Append
-          }
-
       - name: Package app
         shell: bash
         run: |
           mkdir -p dist
+          JAR_NAME=$(basename $(ls target/*.jar))
           jpackage \
             --type exe \
             --name "$APP_NAME" \
             --input target \
             --main-jar "$JAR_NAME" \
             --main-class "$MAIN_CLASS" \
-            --app-version "$APP_VERSION" \
+            --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
-            --license-file LICENSE \
             --description "Cireon Backend Application" \
-            --arguments "--spring.profiles.active=prod" \
+            --win-console \
             --win-shortcut \
             --win-menu \
-            --win-menu-group "Cireon" \
-            --win-console \
-            --win-per-user-install \
+            --win-dir-chooser \
             --dest dist
-
       - name: Rename outputs
         shell: bash
         run: |
           mkdir -p release
-          shopt -s nullglob
-          files=(dist/*)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No artifacts"
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            ext="${f##*.}"
-            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
-            mv "$f" "release/$new"
+          for f in dist/*.exe; do
+            mv "$f" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.exe"
           done
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -227,67 +165,39 @@ jobs:
     needs: [resolve-version, build-jar]
     if: needs.resolve-version.outputs.build_linux == 'true'
     runs-on: ubuntu-latest
-
-    env:
-      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
-      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
           name: app-jar
           path: target
-
-      - name: Locate JAR
-        shell: bash
-        run: |
-          JAR=$(ls -t target/*.jar | head -n1)
-          echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
-
       - name: Package app
         shell: bash
         run: |
           mkdir -p dist
+          JAR_NAME=$(basename $(ls target/*.jar))
           jpackage \
             --type deb \
             --name "$APP_NAME" \
             --input target \
             --main-jar "$JAR_NAME" \
             --main-class "$MAIN_CLASS" \
-            --app-version "$APP_VERSION" \
+            --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
-            --license-file LICENSE \
-            --description "Cireon Backend Application" \
-            --arguments "--spring.profiles.active=prod" \
             --linux-package-name cireon-backend \
-            --linux-deb-maintainer "Cireon Team" \
-            --linux-menu-group "Application" \
             --dest dist
-
       - name: Rename outputs
         shell: bash
         run: |
           mkdir -p release
-          shopt -s nullglob
-          files=(dist/*)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No artifacts"
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            ext="${f##*.}"
-            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
-            mv "$f" "release/$new"
+          for f in dist/*.deb; do
+            mv "$f" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Linux.deb"
           done
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -298,66 +208,38 @@ jobs:
     needs: [resolve-version, build-jar]
     if: needs.resolve-version.outputs.build_mac == 'true' && needs.resolve-version.outputs.major_version != '0'
     runs-on: macos-latest
-
-    env:
-      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
-      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
-
       - name: Download JAR artifact
         uses: actions/download-artifact@v4
         with:
           name: app-jar
           path: target
-
-      - name: Locate JAR
-        shell: bash
-        run: |
-          JAR=$(ls -t target/*.jar | head -n1)
-          echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
-
       - name: Package app
         shell: bash
         run: |
           mkdir -p dist
+          JAR_NAME=$(basename $(ls target/*.jar))
           jpackage \
             --type dmg \
             --name "$APP_NAME" \
             --input target \
             --main-jar "$JAR_NAME" \
             --main-class "$MAIN_CLASS" \
-            --app-version "$APP_VERSION" \
+            --app-version "${{ needs.resolve-version.outputs.app_version }}" \
             --vendor "Cireon" \
-            --license-file LICENSE \
-            --description "Cireon Backend Application" \
-            --arguments "--spring.profiles.active=prod" \
-            --mac-package-identifier com.cireon.backend \
-            --mac-package-name "Cireon Backend" \
             --dest dist
-
       - name: Rename outputs
         shell: bash
         run: |
           mkdir -p release
-          shopt -s nullglob
-          files=(dist/*)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No artifacts"
-            exit 0
-          fi
-          for f in "${files[@]}"; do
-            ext="${f##*.}"
-            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
-            mv "$f" "release/$new"
+          for f in dist/*.dmg; do
+            mv "$f" "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-macOS.dmg"
           done
-
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -366,34 +248,20 @@ jobs:
 
   release:
     needs: [resolve-version, build-jar, package-windows, package-linux, package-mac]
-    if: >
-      always() &&
-      needs.build-jar.result == 'success' &&
-      (needs.package-windows.result == 'success' || needs.package-windows.result == 'skipped') &&
-      (needs.package-linux.result == 'success' || needs.package-linux.result == 'skipped') &&
-      (needs.package-mac.result == 'success' || needs.package-mac.result == 'skipped')
+    if: always() && needs.build-jar.result == 'success'
     runs-on: ubuntu-latest
-
-    env:
-      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
-      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
-
     steps:
       - uses: actions/download-artifact@v4
         with:
           path: release-assets
-
       - name: Flatten files
         run: |
           mkdir flat
-          find release-assets -type f | while read f; do
-            cp "$f" flat/
-          done
-
+          find release-assets -type f -exec cp {} flat/ \;
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ env.RELEASE_TAG }}
-          name: "${{ env.APP_NAME }} ${{ env.RELEASE_TAG }}"
+          tag_name: ${{ needs.resolve-version.outputs.release_tag }}
+          name: "${{ env.APP_NAME }} ${{ needs.resolve-version.outputs.release_tag }}"
           generate_release_notes: true
           files: flat/*
