@@ -23,7 +23,7 @@ public class FileWatcher implements ApplicationContextInitializer<ConfigurableAp
 
     @Override
     public void initialize(ConfigurableApplicationContext applicationContext) {
-        ServerApplication.LOGGER.log(java.util.logging.Level.INFO, "Initializing file watching service...");
+        ServerApplication.LOGGER.info("Initializing file watching service...");
         try {
             watcher = FileSystems.getDefault().newWatchService();
         } catch (IOException e) {
@@ -55,18 +55,18 @@ public class FileWatcher implements ApplicationContextInitializer<ConfigurableAp
     private static final Map<String, WatchKey> registeredPaths = new java.util.concurrent.ConcurrentHashMap<>();
 
     public static boolean RegisterPath(Source source) {
-        if(registeredPaths.containsKey(source.getDirPath().toString())) {
-            ServerApplication.LOGGER.log(java.util.logging.Level.WARNING, "Attempted to register path that is already registered: " + source.getDirPath());
+        if (registeredPaths.containsKey(source.getDirPath().toString())) {
+            ServerApplication.LOGGER.warn("Attempted to register path that is already registered: " + source.getDirPath());
             return false;
         }
         try {
             WatchKey key = Path.of(source.getDirPath().toString()).register(watcher, new WatchEvent.Kind[]{ENTRY_MODIFY, ENTRY_CREATE, ENTRY_DELETE}, FILE_TREE);
             registeredPaths.put(source.getDirPath().toString(), key);
-            ServerApplication.LOGGER.log(java.util.logging.Level.SEVERE, "Registered path for watching: " + source.getDirPath());
+            ServerApplication.LOGGER.info("Registered path for watching: " + source.getDirPath());
             handleRegisteredPaths(source);
             return true;
         } catch (IOException e) {
-            ServerApplication.LOGGER.log(java.util.logging.Level.SEVERE, "Failed to register path for watching: " + source.getDirPath(), e);
+            ServerApplication.LOGGER.warn("Failed to register path for watching: " + source.getDirPath(), e);
             return false;
         }
     }
@@ -77,7 +77,7 @@ public class FileWatcher implements ApplicationContextInitializer<ConfigurableAp
             registeredPaths.remove(path);
             return true;
         } else {
-            ServerApplication.LOGGER.log(java.util.logging.Level.WARNING, "Attempted to unregister path that was not registered: " + path);
+            ServerApplication.LOGGER.warn( "Attempted to unregister path that was not registered: " + path);
             return false;
         }
     }

@@ -1,5 +1,6 @@
 package com.cireonapp.server.controller.backend;
 
+import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.dto.ErrorResponseDto;
@@ -24,6 +25,8 @@ public class ContentController {
 
     @GetMapping(value = "/video/movie/{id}",produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public Mono<Resource> getVideo(@PathVariable String id) {
+
+        ServerApplication.LOGGER.info("test");
 
         Optional<Movie> movie = MovieManager.get(id);
 

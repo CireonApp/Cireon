@@ -22,7 +22,7 @@ public class StreamingService {
         Path path = Path.of(videoPath);
 
         if (!Files.exists(path) || !Files.isReadable(path)) {
-            ServerApplication.LOGGER.warning("File not found: " + videoPath);
+            ServerApplication.LOGGER.warn("File not found: " + videoPath);
             return Mono.error(new FileNotFoundException("File not found: " + videoPath));
         }
 

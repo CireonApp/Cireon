@@ -63,7 +63,6 @@
         </dependency>
 
 
-
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
@@ -88,7 +87,6 @@
             <groupId>com.fasterxml.jackson.datatype</groupId>
             <artifactId>jackson-datatype-jsr310</artifactId>
         </dependency>
-
 
 
         <dependency>
@@ -142,19 +140,7 @@
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>banner.txt</include>
-                    <include>**/application*.properties</include>
-                </includes>
-            </resource>
-            <resource>
-                <directory>src/main/resources</directory>
                 <filtering>false</filtering>
-                <includes>
-                    <include>templates/**</include>
-                    <include>static/**</include>
-                </includes>
             </resource>
         </resources>
     </build>
