@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag example v1.0.0 or v0.1.0-alpha
-        required: true
-        default: v1.0.0
+        description: Version tag example v1.0.0 or v0.1.0-alpha (leave empty to use pom.xml version)
+        required: false
+        default: ""
 
       target:
         description: Build targets comma separated windows,linux,mac or all
@@ -30,17 +30,27 @@ jobs:
       major_version: ${{ steps.resolve.outputs.major_version }}
       targets: ${{ steps.resolve.outputs.targets }}
     steps:
+      - uses: actions/checkout@v4
+
       - id: resolve
         shell: bash
         run: |
           TAG="${{ inputs.tag }}"
           TARGETS="${{ inputs.target }}"
 
+          # If tag is empty, extract version from pom.xml
+          if [ -z "$TAG" ]; then
+            echo "Extracting version from pom.xml..."
+            POMVERSION=$(grep -m1 '<version>' pom.xml | sed 's/.*<version>\(.*\)<\/version>.*/\1/')
+            TAG="v$POMVERSION"
+            echo "Automatically using version from pom.xml: $TAG"
+          fi
+
           CLEAN="${TAG#v}"
           VERSION=$(echo "$CLEAN" | grep -oE '^[0-9]+(\.[0-9]+){0,2}')
 
           if [ -z "$VERSION" ]; then
-            echo "Invalid version"
+            echo "Invalid version: $TAG"
             exit 1
           fi
 
@@ -135,13 +145,17 @@ jobs:
         run: |
           mkdir -p dist
 
-          # Common jpackage options
-          COMMON_OPTS="--name $APP_NAME --input target --main-jar $JAR_NAME --main-class $MAIN_CLASS --app-version $APP_VERSION --vendor 'Cireon' --license-file LICENSE --description 'Cireon Backend Application'"
-
           if [ "$RUNNER_OS" = "Windows" ]; then
             jpackage \
               --type exe \
-              $COMMON_OPTS \
+              --name "$APP_NAME" \
+              --input target \
+              --main-jar "$JAR_NAME" \
+              --main-class "$MAIN_CLASS" \
+              --app-version "$APP_VERSION" \
+              --vendor "Cireon" \
+              --license-file LICENSE \
+              --description "Cireon Backend Application" \
               --win-shortcut \
               --win-dir-chooser \
               --win-menu \
@@ -152,7 +166,14 @@ jobs:
           elif [ "$RUNNER_OS" = "Linux" ]; then
             jpackage \
               --type deb \
-              $COMMON_OPTS \
+              --name "$APP_NAME" \
+              --input target \
+              --main-jar "$JAR_NAME" \
+              --main-class "$MAIN_CLASS" \
+              --app-version "$APP_VERSION" \
+              --vendor "Cireon" \
+              --license-file LICENSE \
+              --description "Cireon Backend Application" \
               --linux-package-name cireon-backend \
               --linux-deb-maintainer "Cireon Team" \
               --linux-menu-group "Application" \
@@ -167,7 +188,14 @@ jobs:
 
             jpackage \
               --type dmg \
-              $COMMON_OPTS \
+              --name "$APP_NAME" \
+              --input target \
+              --main-jar "$JAR_NAME" \
+              --main-class "$MAIN_CLASS" \
+              --app-version "$APP_VERSION" \
+              --vendor "Cireon" \
+              --license-file LICENSE \
+              --description "Cireon Backend Application" \
               --mac-package-identifier com.cireon.backend \
               --mac-package-name "Cireon Backend" \
               --dest dist
