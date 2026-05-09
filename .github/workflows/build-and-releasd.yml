@@ -134,18 +134,10 @@ jobs:
           name: app-jar
           path: release/*.jar
 
-  package:
+  package-windows:
     needs: [resolve-version, build-jar]
-    if: >
-      (matrix.os == 'windows-latest' && needs.resolve-version.outputs.build_windows == 'true') ||
-      (matrix.os == 'ubuntu-latest' && needs.resolve-version.outputs.build_linux == 'true') ||
-      (matrix.os == 'macos-latest' && needs.resolve-version.outputs.build_mac == 'true' && needs.resolve-version.outputs.major_version != '0')
-
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
+    if: needs.resolve-version.outputs.build_windows == 'true'
+    runs-on: windows-latest
 
     env:
       RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
@@ -171,8 +163,7 @@ jobs:
           JAR=$(ls -t target/*.jar | head -n1)
           echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
 
-      - name: Install WiX (Windows only)
-        if: runner.os == 'Windows'
+      - name: Install WiX
         shell: pwsh
         run: |
           if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
@@ -187,73 +178,34 @@ jobs:
         shell: bash
         run: |
           mkdir -p dist
-
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            jpackage \
-              --type exe \
-              --name "$APP_NAME" \
-              --input target \
-              --main-jar "$JAR_NAME" \
-              --main-class "$MAIN_CLASS" \
-              --app-version "$APP_VERSION" \
-              --vendor "Cireon" \
-              --license-file LICENSE \
-              --description "Cireon Backend Application" \
-              --java-options "-Dspring.profiles.active=prod" \
-              --win-shortcut \
-              --win-dir-chooser \
-              --win-menu \
-              --win-menu-group "Cireon" \
-              --win-console \
-              --dest dist
-
-          elif [ "$RUNNER_OS" = "Linux" ]; then
-            jpackage \
-              --type deb \
-              --name "$APP_NAME" \
-              --input target \
-              --main-jar "$JAR_NAME" \
-              --main-class "$MAIN_CLASS" \
-              --app-version "$APP_VERSION" \
-              --vendor "Cireon" \
-              --license-file LICENSE \
-              --description "Cireon Backend Application" \
-              --java-options "-Dspring.profiles.active=prod" \
-              --linux-package-name cireon-backend \
-              --linux-deb-maintainer "Cireon Team" \
-              --linux-menu-group "Application" \
-              --dest dist
-
-          elif [ "$RUNNER_OS" = "macOS" ]; then
-            jpackage \
-              --type dmg \
-              --name "$APP_NAME" \
-              --input target \
-              --main-jar "$JAR_NAME" \
-              --main-class "$MAIN_CLASS" \
-              --app-version "$APP_VERSION" \
-              --vendor "Cireon" \
-              --license-file LICENSE \
-              --description "Cireon Backend Application" \
-              --java-options "-Dspring.profiles.active=prod" \
-              --mac-package-identifier com.cireon.backend \
-              --mac-package-name "Cireon Backend" \
-              --dest dist
-          fi
+          jpackage \
+            --type exe \
+            --name "$APP_NAME" \
+            --input target \
+            --main-jar "$JAR_NAME" \
+            --main-class "$MAIN_CLASS" \
+            --app-version "$APP_VERSION" \
+            --vendor "Cireon" \
+            --license-file LICENSE \
+            --description "Cireon Backend Application" \
+            --java-options "-Dspring.profiles.active=prod" \
+            --win-shortcut \
+            --win-dir-chooser \
+            --win-menu \
+            --win-menu-group "Cireon" \
+            --win-console \
+            --dest dist
 
       - name: Rename outputs
         shell: bash
         run: |
           mkdir -p release
-
           shopt -s nullglob
           files=(dist/*)
-
           if [ ${#files[@]} -eq 0 ]; then
             echo "No artifacts"
             exit 0
           fi
-
           for f in "${files[@]}"; do
             ext="${f##*.}"
             new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
@@ -263,11 +215,158 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ runner.os }}
+          name: windows
+          path: release/*
+
+  package-linux:
+    needs: [resolve-version, build-jar]
+    if: needs.resolve-version.outputs.build_linux == 'true'
+    runs-on: ubuntu-latest
+
+    env:
+      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
+      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Locate JAR
+        shell: bash
+        run: |
+          JAR=$(ls -t target/*.jar | head -n1)
+          echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
+
+      - name: Package app
+        shell: bash
+        run: |
+          mkdir -p dist
+          jpackage \
+            --type deb \
+            --name "$APP_NAME" \
+            --input target \
+            --main-jar "$JAR_NAME" \
+            --main-class "$MAIN_CLASS" \
+            --app-version "$APP_VERSION" \
+            --vendor "Cireon" \
+            --license-file LICENSE \
+            --description "Cireon Backend Application" \
+            --java-options "-Dspring.profiles.active=prod" \
+            --linux-package-name cireon-backend \
+            --linux-deb-maintainer "Cireon Team" \
+            --linux-menu-group "Application" \
+            --dest dist
+
+      - name: Rename outputs
+        shell: bash
+        run: |
+          mkdir -p release
+          shopt -s nullglob
+          files=(dist/*)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No artifacts"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            ext="${f##*.}"
+            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
+            mv "$f" "release/$new"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux
+          path: release/*
+
+  package-mac:
+    needs: [resolve-version, build-jar]
+    if: needs.resolve-version.outputs.build_mac == 'true' && needs.resolve-version.outputs.major_version != '0'
+    runs-on: macos-latest
+
+    env:
+      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
+      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
+
+      - name: Locate JAR
+        shell: bash
+        run: |
+          JAR=$(ls -t target/*.jar | head -n1)
+          echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
+
+      - name: Package app
+        shell: bash
+        run: |
+          mkdir -p dist
+          jpackage \
+            --type dmg \
+            --name "$APP_NAME" \
+            --input target \
+            --main-jar "$JAR_NAME" \
+            --main-class "$MAIN_CLASS" \
+            --app-version "$APP_VERSION" \
+            --vendor "Cireon" \
+            --license-file LICENSE \
+            --description "Cireon Backend Application" \
+            --java-options "-Dspring.profiles.active=prod" \
+            --mac-package-identifier com.cireon.backend \
+            --mac-package-name "Cireon Backend" \
+            --dest dist
+
+      - name: Rename outputs
+        shell: bash
+        run: |
+          mkdir -p release
+          shopt -s nullglob
+          files=(dist/*)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No artifacts"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            ext="${f##*.}"
+            new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
+            mv "$f" "release/$new"
+          done
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: macos
           path: release/*
 
   release:
-    needs: [resolve-version, build-jar, package]
+    needs: [resolve-version, build-jar, package-windows, package-linux, package-mac]
+    if: >
+      always() &&
+      needs.build-jar.result == 'success' &&
+      (needs.package-windows.result == 'success' || needs.package-windows.result == 'skipped') &&
+      (needs.package-linux.result == 'success' || needs.package-linux.result == 'skipped') &&
+      (needs.package-mac.result == 'success' || needs.package-mac.result == 'skipped')
     runs-on: ubuntu-latest
 
     env:
