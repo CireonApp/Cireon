@@ -9,9 +9,11 @@ import com.cireonapp.server.util.DataDirHelper;
 import ch.qos.logback.classic.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.Environment;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -25,9 +27,9 @@ public class ServerApplication {
     public static final Logger LOGGER =
             LoggerFactory.getLogger(ServerApplication.class);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Throwable {
         try {
-            // Silence Nitrite before Spring starts — logback-spring.xml profiles aren't active yet
+            // Silence Nitrite before Spring starts — only when not in dev profile
             silenceLogger("nitrite");
             silenceLogger("org.dizitart");
 
@@ -35,6 +37,9 @@ public class ServerApplication {
             Databases.bootstrap();
             Config config = ConfigManager.get();
             Databases.shutdown();
+
+            unsilenceLogger("nitrite");
+            unsilenceLogger("org.dizitart");
 
             SpringApplication app = new SpringApplication(ServerApplication.class);
             app.addInitializers(new Databases());
@@ -46,7 +51,9 @@ public class ServerApplication {
 
             app.addInitializers(new FileWatcher(), new SourceSubscription());
             application = app.run(args);
-        } catch (Exception e) {
+        } catch (Throwable e) {
+            // DevTools throws SilentExitException intentionally on restart — let it through
+            if (e.getClass().getName().contains("SilentExitException")) throw e;
             LOGGER.error("Fatal error during startup: {}", e.getMessage(), e);
             System.out.println("\nPress Enter to close...");
             new Scanner(System.in).nextLine();
@@ -62,4 +69,7 @@ public class ServerApplication {
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name)).setLevel(Level.OFF);
     }
 
+    private static void unsilenceLogger(String name) {
+        ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name)).setLevel(Level.TRACE);
+    }
 }

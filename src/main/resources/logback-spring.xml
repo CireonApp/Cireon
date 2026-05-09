@@ -25,7 +25,8 @@
         <logger name="com.cireonapp.server.ServerApplication" level="TRACE" additivity="false">
             <appender-ref ref="CONSOLE"/>
         </logger>
-        <logger name="org.dizitart.no2" level="OFF"/>
+        <logger name="org.dizitart" level="OFF"/>
+        <logger name="nitrite" level="OFF"/>
     </springProfile>
 
 </configuration>
