@@ -4,12 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: Version tag (example v1.0.0 or v0.1.0-alpha)
+        description: Version tag example v1.0.0 or v0.1.0-alpha
         required: true
         default: v1.0.0
 
       target:
-        description: Build targets comma separated (all, windows, linux, mac)
+        description: Build targets comma separated windows,linux,mac or all
         required: true
         default: all
 
@@ -40,7 +40,7 @@ jobs:
           VERSION=$(echo "$CLEAN" | grep -oE '^[0-9]+(\.[0-9]+){0,2}')
 
           if [ -z "$VERSION" ]; then
-            echo "Invalid version: $TAG"
+            echo "Invalid version"
             exit 1
           fi
 
@@ -101,8 +101,8 @@ jobs:
       - name: Check target filter
         shell: bash
         run: |
-          OS="${RUNNER_OS}"
-          RAW="${TARGETS}"
+          OS="$RUNNER_OS"
+          RAW="$TARGETS"
 
           IFS=',' read -ra LIST <<< "$RAW"
 
@@ -122,8 +122,13 @@ jobs:
 
           if [ "$ALLOW" -ne 1 ]; then
             echo "Skipping $OS"
+            echo "SKIP=true" >> $GITHUB_ENV
             exit 0
           fi
+
+      - name: Stop skipped job
+        if: env.SKIP == 'true'
+        run: exit 0
 
       - name: Package app
         shell: bash
@@ -154,7 +159,8 @@ jobs:
 
           elif [ "$RUNNER_OS" = "macOS" ]; then
             if [ "$MAJOR_VERSION" -eq 0 ]; then
-              echo "Skipping macOS build for version $APP_VERSION"
+              echo "Skipping macOS build"
+              echo "SKIP=true" >> $GITHUB_ENV
               exit 0
             fi
 
@@ -169,22 +175,34 @@ jobs:
           fi
 
       - name: Rename outputs
+        if: env.SKIP != 'true'
         shell: bash
         run: |
           mkdir -p release
-          for f in dist/*; do
+
+          shopt -s nullglob
+          files=(dist/*)
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No artifacts"
+            exit 0
+          fi
+
+          for f in "${files[@]}"; do
             ext="${f##*.}"
             new="$APP_NAME-$RELEASE_TAG-$RUNNER_OS.$ext"
             mv "$f" "release/$new"
           done
 
       - name: Prepare JAR artifact
+        if: env.SKIP != 'true'
         shell: bash
         run: |
           mkdir -p release
           cp target/*.jar release/$APP_NAME-$RELEASE_TAG.jar
 
       - name: Upload artifacts
+        if: env.SKIP != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}
@@ -202,7 +220,9 @@ jobs:
       - name: Flatten files
         run: |
           mkdir flat
-          find release-assets -type f -exec cp {} flat/ \;
+          find release-assets -type f | while read f; do
+            cp "$f" flat/
+          done
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
