@@ -29,6 +29,9 @@ jobs:
       app_version: ${{ steps.resolve.outputs.app_version }}
       major_version: ${{ steps.resolve.outputs.major_version }}
       targets: ${{ steps.resolve.outputs.targets }}
+      build_windows: ${{ steps.resolve.outputs.build_windows }}
+      build_linux: ${{ steps.resolve.outputs.build_linux }}
+      build_mac: ${{ steps.resolve.outputs.build_mac }}
     steps:
       - uses: actions/checkout@v4
 
@@ -36,7 +39,38 @@ jobs:
         shell: bash
         run: |
           TAG="${{ inputs.tag }}"
-          TARGETS="${{ inputs.target }}"
+          TARGETS=$(echo "${{ inputs.target }}" | tr '[:upper:]' '[:lower:]')
+
+          BUILD_WINDOWS=false
+          BUILD_LINUX=false
+          BUILD_MAC=false
+
+          IFS=',' read -ra LIST <<< "$TARGETS"
+          for t in "${LIST[@]}"; do
+            t=$(echo "$t" | xargs)
+            case "$t" in
+              all)
+                BUILD_WINDOWS=true
+                BUILD_LINUX=true
+                BUILD_MAC=true
+                ;;
+              windows)
+                BUILD_WINDOWS=true
+                ;;
+              linux)
+                BUILD_LINUX=true
+                ;;
+              mac)
+                BUILD_MAC=true
+                ;;
+            esac
+          done
+
+          if [ "$BUILD_WINDOWS" = false ] && [ "$BUILD_LINUX" = false ] && [ "$BUILD_MAC" = false ]; then
+            echo "Invalid target input: $TARGETS"
+            echo "Use one or more of: windows,linux,mac,all"
+            exit 1
+          fi
 
           # If tag is empty, extract version from pom.xml (skip parent version, get project version)
           if [ -z "$TAG" ]; then
@@ -60,21 +94,17 @@ jobs:
           echo "app_version=$VERSION" >> $GITHUB_OUTPUT
           echo "major_version=$MAJOR" >> $GITHUB_OUTPUT
           echo "targets=$TARGETS" >> $GITHUB_OUTPUT
+          echo "build_windows=$BUILD_WINDOWS" >> $GITHUB_OUTPUT
+          echo "build_linux=$BUILD_LINUX" >> $GITHUB_OUTPUT
+          echo "build_mac=$BUILD_MAC" >> $GITHUB_OUTPUT
 
-  build:
+  build-jar:
     needs: resolve-version
-
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
-
-    runs-on: ${{ matrix.os }}
+    if: needs.resolve-version.outputs.build_windows == 'true' || needs.resolve-version.outputs.build_linux == 'true' || needs.resolve-version.outputs.build_mac == 'true'
+    runs-on: ubuntu-latest
 
     env:
       RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
-      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
-      MAJOR_VERSION: ${{ needs.resolve-version.outputs.major_version }}
-      TARGETS: ${{ needs.resolve-version.outputs.targets }}
 
     steps:
       - uses: actions/checkout@v4
@@ -86,59 +116,72 @@ jobs:
           cache: maven
 
       - name: Make mvnw executable
-        if: runner.os != 'Windows'
         run: chmod +x ./mvnw
 
       - name: Build JAR
-        run: ./mvnw clean package -DskipTests
+        run: ./mvnw package -DskipTests
+
+      - name: Prepare JAR artifact
+        shell: bash
+        run: |
+          mkdir -p release
+          JAR=$(ls -t target/*.jar | grep -v '\.original$' | head -n1)
+          cp "$JAR" "release/$APP_NAME-$RELEASE_TAG.jar"
+
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-jar
+          path: release/*.jar
+
+  package:
+    needs: [resolve-version, build-jar]
+    if: >
+      (matrix.os == 'windows-latest' && needs.resolve-version.outputs.build_windows == 'true') ||
+      (matrix.os == 'ubuntu-latest' && needs.resolve-version.outputs.build_linux == 'true') ||
+      (matrix.os == 'macos-latest' && needs.resolve-version.outputs.build_mac == 'true' && needs.resolve-version.outputs.major_version != '0')
+
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      RELEASE_TAG: ${{ needs.resolve-version.outputs.release_tag }}
+      APP_VERSION: ${{ needs.resolve-version.outputs.app_version }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: app-jar
+          path: target
 
       - name: Locate JAR
         shell: bash
         run: |
-          JAR=$(ls -t target/*.jar | grep -v '\.original$' | head -n1)
+          JAR=$(ls -t target/*.jar | head -n1)
           echo "JAR_NAME=$(basename $JAR)" >> $GITHUB_ENV
 
       - name: Install WiX (Windows only)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install wixtoolset -y --no-progress
+          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+            choco install wixtoolset -y --no-progress
+          }
           $wixPath = "C:\Program Files (x86)\WiX Toolset v3.14\bin"
           if (Test-Path $wixPath) {
             $wixPath | Out-File -FilePath $env:GITHUB_PATH -Append
           }
-
-      - name: Check target filter
-        shell: bash
-        run: |
-          OS="$RUNNER_OS"
-          RAW="$TARGETS"
-
-          IFS=',' read -ra LIST <<< "$RAW"
-
-          ALLOW=0
-
-          for t in "${LIST[@]}"; do
-            t=$(echo "$t" | xargs)
-
-            if [ "$t" = "all" ]; then
-              ALLOW=1
-            fi
-
-            if [ "$t" = "windows" ] && [ "$OS" = "Windows" ]; then ALLOW=1; fi
-            if [ "$t" = "linux" ] && [ "$OS" = "Linux" ]; then ALLOW=1; fi
-            if [ "$t" = "mac" ] && [ "$OS" = "macOS" ]; then ALLOW=1; fi
-          done
-
-          if [ "$ALLOW" -ne 1 ]; then
-            echo "Skipping $OS"
-            echo "SKIP=true" >> $GITHUB_ENV
-            exit 0
-          fi
-
-      - name: Stop skipped job
-        if: env.SKIP == 'true'
-        run: exit 0
 
       - name: Package app
         shell: bash
@@ -182,12 +225,6 @@ jobs:
               --dest dist
 
           elif [ "$RUNNER_OS" = "macOS" ]; then
-            if [ "$MAJOR_VERSION" -eq 0 ]; then
-              echo "Skipping macOS build"
-              echo "SKIP=true" >> $GITHUB_ENV
-              exit 0
-            fi
-
             jpackage \
               --type dmg \
               --name "$APP_NAME" \
@@ -205,7 +242,6 @@ jobs:
           fi
 
       - name: Rename outputs
-        if: env.SKIP != 'true'
         shell: bash
         run: |
           mkdir -p release
@@ -224,22 +260,14 @@ jobs:
             mv "$f" "release/$new"
           done
 
-      - name: Prepare JAR artifact
-        if: env.SKIP != 'true'
-        shell: bash
-        run: |
-          mkdir -p release
-          cp target/*.jar release/$APP_NAME-$RELEASE_TAG.jar
-
       - name: Upload artifacts
-        if: env.SKIP != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}
           path: release/*
 
   release:
-    needs: [build, resolve-version]
+    needs: [resolve-version, build-jar, package]
     runs-on: ubuntu-latest
 
     env:
