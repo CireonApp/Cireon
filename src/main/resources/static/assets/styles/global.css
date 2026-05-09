@@ -1,0 +1,68 @@
+:root {
+    --primary: rgb(0, 186, 186);
+    /*--secondary-color: #3f51b5;*/
+    --background: rgb(23, 23, 23);
+}
+
+@font-face {
+    font-family: "Roboto";
+    src: url("../fonts/Roboto.ttf") format("truetype");
+    font-display: swap;
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+body {
+    background-color: var(--background);
+    color: white;
+    font-family: Roboto, Arial, sans-serif;
+}
+
+.flex-row-center {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+
+.flex-col-center {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.flex-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.flex-col {
+    display: flex;
+    flex-direction: column;
+}
+
+
+.no-padding-margin {
+    padding: 0;
+    margin: 0;
+}
+
+.password-container {
+    position: relative;
+
+    .password-hide-show-button {
+        position: absolute;
+        transform: translate(-125%, 25%);
+        background: rgb(0 0 0 / 0.1);
+        border-radius: 8px;
+        padding: 0.25rem;
+        cursor: pointer;
+
+
+    }
+}
+
+.gap-1rem {
+    gap: 1rem;
+}

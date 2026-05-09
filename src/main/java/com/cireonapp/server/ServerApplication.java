@@ -6,7 +6,6 @@ import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.initializer.SourceSubscription;
 import com.cireonapp.server.util.DataDirHelper;
-import jakarta.annotation.PreDestroy;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
 import org.springframework.boot.SpringApplication;
@@ -32,11 +31,14 @@ public class ServerApplication {
 
 
         DataDirHelper.initializeDataDir();
+
         Databases.bootstrap();
+        Config config = ConfigManager.get();
+        Databases.shutdown();
 
         SpringApplication app = new SpringApplication(ServerApplication.class);
 
-        Config config = ConfigManager.get();
+        app.addInitializers(new Databases());
 
         Map<String, Object> props = new HashMap<>();
         props.put("server.port", config.getPort());
@@ -44,12 +46,10 @@ public class ServerApplication {
         props.put("application.version", model.getVersion());
 
         app.setDefaultProperties(props);
-
-        app.addInitializers(new FileWatcher(),new SourceSubscription());
+        app.addInitializers(new FileWatcher(), new SourceSubscription());
 
         application = app.run(args);
     }
-
 
 
     public static void restart() {

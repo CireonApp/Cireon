@@ -12,9 +12,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.util.Optional;
 
 @Controller
-public class LoginController {
-    @GetMapping("/login")
-    String login(Model model, HttpServletRequest request, HttpServletResponse response) {
+public class SignupController {
+    @GetMapping("/signup")
+    String signup(Model model, HttpServletRequest request, HttpServletResponse response) {
 
         Optional<Cookie> optCookie = CookieHelper.getAuthCookie(request);
 
@@ -25,7 +25,7 @@ public class LoginController {
             }
         }
 
-        return "login/index";
+        return "signup/index";
     }
 
 }

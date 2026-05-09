@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.LinkedHashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -43,6 +44,11 @@ public class MovieManager {
                 .sorted((a, b) -> Integer.compare(b.score(), a.score()))
                 .map(MovieSearchResult::movie)
                 .collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    public static Optional<Movie> get(String id){
+        if(id == null) return Optional.empty();
+        return Optional.ofNullable(Databases.movieRepository.getById(id));
     }
 
     public static Set<Movie> getAll() {
@@ -200,7 +206,7 @@ public class MovieManager {
         file = file.replaceFirst("\\.[^.]+$", "");
         file = file.replaceAll("(?i)\\b(1337x|thepiratebay|tpb|torrentgalaxy|tgx|limetorrents|magnetdl|yts|yify|nyaa|fitgirl|repacks|eztv|rutracker|zooqle|kickasstorrents|kat|torrentz2|btdig|snowfl|animetosho|myanonamouse|mam|academictorrents|tamilrockers|extto|torlock|torrentdownloads|yourbittorrent|rarbg|rutor|ibit|demonoid|pirateiro|kinozal|btmet|qbittorrent|deluge|transmission|utorrent|biglybt|tixati|vuze)\\b", "");
         file = file.replaceAll("(?i)\\b(1080p|720p|2160p|4k|bluray|brrip|webrip|x264|x265|h264|h265)\\b", "");
-        file = file.replaceAll("\\[.*?\\]", "");
+        file = file.replaceAll("\\[.*?]", "");
         file = file.replaceAll("\\.", " ");
         file = file.trim();
 

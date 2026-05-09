@@ -7,13 +7,13 @@
     <script th:src="@{/assets/scripts/login.js}"></script>
     <script src="http://localhost:35729/livereload.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Login</title>
+    <title>Sign Up</title>
 </head>
 <body>
 <div class="container">
     <div class="flex-row-center title gap-1rem">
-        <img width="50px" th:src="@{/assets/icons/login_primary.svg}" alt="">
-        <p>Login</p>
+        <img width="50px" th:src="@{/assets/icons/user_add_primary.svg}" alt="">
+        <p>Sign Up</p>
     </div>
     <div id="error-bubble" style="display: none" class="error-message flex-row-center">
         <img width="30px" th:src="@{/assets/icons/error_white.svg}" alt="">
@@ -21,10 +21,15 @@
             Error
         </p>
     </div>
-    <form class="flex-col-center" autocomplete="off" action="javascript:login()" method="post">
+    <form class="flex-col-center" autocomplete="off" action="javascript:signup()" method="post">
         <div class="field">
             <label for="username">Username</label>
             <input maxlength="18" minlength="6" pattern="^[a-zA-Z0-9_]+$" required id="username" type="text"/>
+        </div>
+
+        <div class="field">
+            <label for="displayName">Display Name</label>
+            <input maxlength="20" minlength="2" required id="displayName" type="text"/>
         </div>
 
         <div class="field">
@@ -36,13 +41,10 @@
             </div>
         </div>
 
-        <button id="submit-button" type="submit">Login</button>
+        <button id="submit-button" type="submit">Sign Up</button>
     </form>
-
-
-    <div class="link-flex-row-space-between">
-        <a class="link" href="/signup">Create an account</a>
-        <a class="link" href="/admin">Admin panel</a>
+    <div>
+        <a class="link" href="/login">I already have an account!</a>
     </div>
 </div>
 </body>

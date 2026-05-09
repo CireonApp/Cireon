@@ -11,66 +11,69 @@ import org.dizitart.no2.Nitrite;
 import org.dizitart.no2.mapper.jackson.JacksonMapperModule;
 import org.dizitart.no2.mvstore.MVStoreModule;
 import org.dizitart.no2.repository.ObjectRepository;
-import org.springframework.stereotype.Component;
+import org.jspecify.annotations.NonNull;
+import org.springframework.context.ApplicationContextInitializer;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
-import java.nio.file.Files;
 
 import static com.cireonapp.server.initializer.AppPath.APP_DIR;
 
-@Component
-public class Databases {
+@Configuration
+public class Databases implements ApplicationContextInitializer<ConfigurableApplicationContext> {
+
     private static Nitrite database;
-    public static ObjectRepository<User> userRepository;
     public static ObjectRepository<Config> configRepository;
+    public static ObjectRepository<User> userRepository;
     public static ObjectRepository<Session> sessionRepository;
     public static ObjectRepository<Source> sourceRepository;
     public static ObjectRepository<Movie> movieRepository;
-    private static boolean initialized = false;
-
 
     public static synchronized void bootstrap() throws IOException {
-        if (initialized) return;
-        initialized = true;
-        if (!Files.exists(APP_DIR.resolve("data")))
-            Files.createDirectory(APP_DIR.resolve("data"));
+        if (database != null && !database.isClosed()) {
+            return;
+        }
 
         MVStoreModule storeModule = MVStoreModule.withConfig()
                 .filePath(APP_DIR.resolve("data/database").toString())
                 .build();
 
-
-
         database = Nitrite.builder()
-//                .loadModule(storeModule)
+                .loadModule(storeModule)
                 .loadModule(new JacksonMapperModule(new JavaTimeModule()))
-//                .registerEntityConverter(new UserConverter())
-//                .registerEntityConverter(new ConfigConverter())
-//                .registerEntityConverter(new SessionConverter())
-//                .registerEntityConverter(new ArtworkConverter())
                 .openOrCreate();
-
 
         userRepository = database.getRepository(User.class, "users");
         configRepository = database.getRepository(Config.class, "config");
         sessionRepository = database.getRepository(Session.class, "sessions");
         sourceRepository = database.getRepository(Source.class, "sources");
         movieRepository = database.getRepository(Movie.class, "movies");
-        firstTimeSetup();
+
+        if (configRepository.find().firstOrNull() == null) {
+            configRepository.insert(new Config());
+        }
     }
 
-    private static void firstTimeSetup() {
-        if (!configRepository.find().toSet().isEmpty()) return;
-        Config config = new Config();
-        //read line to ask for settings.
-
-        configRepository.insert(config);
+    @Bean
+    public Nitrite nitrite() {
+        return database;
     }
 
     @PreDestroy
-    public void shutdown() {
+    public static void shutdown() {
         if (database != null && !database.isClosed()) {
-            database.close(); // Crucial to release the file lock for DevTools restart
+            database.close();
+        }
+    }
+
+    @Override
+    public void initialize(@NonNull ConfigurableApplicationContext applicationContext) {
+        try {
+            bootstrap();
+        } catch (IOException e) {
+           e.printStackTrace();
         }
     }
 }

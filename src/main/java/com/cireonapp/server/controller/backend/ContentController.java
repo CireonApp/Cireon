@@ -1,16 +1,19 @@
 package com.cireonapp.server.controller.backend;
 
+import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.service.StreamingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.io.FileNotFoundException;
+import java.util.Optional;
 
 
 @RestController
@@ -19,8 +22,15 @@ public class ContentController {
     @Autowired
     private StreamingService service;
 
-    @GetMapping(value = "/video/{id}", produces = "video/mp4")
-    public Mono<Resource> getVideo(String id) {
+    @GetMapping(value = "/video/movie/{id}",produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public Mono<Resource> getVideo(@PathVariable String id) {
+
+        Optional<Movie> movie = MovieManager.get(id);
+
+//        if (movie.isEmpty()) {
+//            return Mono.empty();
+//        }
+
 
         //get actual video from database using the id. For testing purposes, we will just return a hardcoded video path.
         String videoPath = "C:/Users/tzurs/Downloads/big buck bunny (2008).mp4";
