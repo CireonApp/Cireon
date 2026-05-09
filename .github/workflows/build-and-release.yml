@@ -135,7 +135,7 @@ jobs:
           mkdir -p dist
           JAR_NAME=$(basename $(ls target/*.jar))
           jpackage \
-            --type exe \
+            --type msi \
             --name "$APP_NAME" \
             --input target \
             --main-jar "$JAR_NAME" \
@@ -151,7 +151,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p release
-          mv dist/*.exe "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.exe"
+          mv dist/*.msi "release/$APP_NAME-${{ needs.resolve-version.outputs.release_tag }}-Windows.msi"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
