@@ -56,10 +56,10 @@ function showHidePassword() {
     const showHidePasswordButton = document.getElementById("showHidePasswordButton");
     if (passwordHidden) {
         password.type = "text"
-        showHidePasswordButton.src = "/assets/icons/visible_primary.svg"
+        showHidePasswordButton.innerText = "visibility"
     } else {
         password.type = "password"
-        showHidePasswordButton.src = "/assets/icons/not_visible_primary.svg"
+        showHidePasswordButton.innerText = "visibility_off"
 
     }
     passwordHidden = !passwordHidden;

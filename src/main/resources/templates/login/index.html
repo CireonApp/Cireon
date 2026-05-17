@@ -1,48 +1,57 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="stylesheet" th:href="@{/assets/styles/global.css}"/>
-    <link rel="stylesheet" th:href="@{/assets/styles/login.css}">
+    <link rel="stylesheet" th:href="@{/assets/styles/style.css}"/>
     <meta charset="UTF-8">
     <script th:src="@{/assets/scripts/login.js}"></script>
-    <script src="http://localhost:35729/livereload.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Login</title>
 </head>
-<body>
-<div class="container">
-    <div class="flex-row-center title gap-1rem">
-        <img width="50px" th:src="@{/assets/icons/login_primary.svg}" alt="">
-        <p>Login</p>
+<body class="margin-0 flex min-h-svh items-center justify-center bg-gradient px-4 py-8" th:classappend="${theme}">
+<div class="relative flex w-full max-w-xl flex-col items-center justify-center gap-6 rounded-2xl border border-white/10 bg-background-modal/95 p-6 shadow-2xl backdrop-blur light:bg-background-modal-light md:p-8">
+    <div class="flex flex-row items-center justify-center gap-4 text-center">
+        <span class="font-material-rounded text-5xl text-primary light:text-black">login</span>
+        <div class="flex flex-col items-start">
+            <p class="text-3xl font-bold tracking-tight">Login</p>
+            <p class="text-sm text-zinc-400 light:text-zinc-600">Welcome to Cireon</p>
+        </div>
     </div>
-    <div id="error-bubble" style="display: none" class="error-message flex-row-center">
-        <img width="30px" th:src="@{/assets/icons/error_white.svg}" alt="">
+    <div class="h-px w-full bg-white/10"></div>
+    <div id="error-bubble" style="display: none"
+         class="mb-2 flex w-full flex-col items-start justify-start gap-2 break-all rounded-lg border border-red-500/30 border-l-4 border-l-red-700 bg-red-500/20 p-4 light:border-l-red-600 light:bg-red-300/80">
+        <div class="flex w-full flex-row items-center justify-start gap-2">
+            <span class="font-material-sharp font-semibold text-4xl light:text-black text-white">error</span>
+            <p class="text-xl font-bold">Error</p>
+        </div>
         <p id="error-message">
-            Error
         </p>
     </div>
-    <form class="flex-col-center" autocomplete="off" action="javascript:login()" method="post">
-        <div class="field">
-            <label for="username">Username</label>
-            <input maxlength="18" minlength="6" pattern="^[a-zA-Z0-9_]+$" required id="username" type="text"/>
+    <form class="mb-2 flex w-full flex-col gap-5" autocomplete="off" action="javascript:login()" method="post">
+        <div class="flex w-full flex-col gap-1.5">
+            <label class="pl-1 text-sm font-medium text-zinc-200 light:text-zinc-800" for="username">Username</label>
+            <input class="w-full rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
+                   maxlength="18" minlength="6" pattern="^[a-zA-Z0-9_]+$" required id="username" type="text"/>
         </div>
 
-        <div class="field">
-            <label for="password">Password</label>
-            <div class="password-container">
-                <input required minlength="8" maxlength="24" pattern="^[a-zA-Z0-9]+$" id="password" type="password"/>
-                <img alt="" onclick="showHidePassword()" id="showHidePasswordButton" class="password-hide-show-button" width=30
-                     th:src="@{/assets/icons/not_visible_primary.svg}">
+        <div class="mb-1 flex w-full flex-col gap-1.5">
+            <label class="pl-1 text-sm font-medium text-zinc-200 light:text-zinc-800" for="password">Password</label>
+            <div class="relative">
+                <input class="w-full rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-12 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
+                       required minlength="8" maxlength="24" pattern="^[a-zA-Z0-9]+$" id="password" type="password"/>
+                <button id="showHidePasswordButton" onclick="showHidePassword()" type="button"
+                      class="absolute right-1 aspect-square top-1/2 -translate-y-1/2 rounded-md p-1 font-material-sharp text-3xl font-normal text-zinc-400 transition hover:bg-white/5 hover:text-white light:text-black">visibility_off</button>
             </div>
         </div>
 
-        <button id="submit-button" type="submit">Login</button>
+        <button class="cursor-pointer rounded-lg bg-primary py-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400"
+                id="submit-button" type="submit">Login
+        </button>
     </form>
 
 
-    <div class="link-flex-row-space-between">
-        <a class="link" href="/signup">Create an account</a>
-        <a class="link" href="/admin">Admin panel</a>
+    <div class="flex w-full flex-col gap-2 text-sm font-medium text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
+        <a rel="noreferrer" class="transition hover:text-primary hover:underline underline-offset-4" href="/signup">Create an account</a>
+        <a rel="noreferrer" class="transition hover:text-primary hover:underline underline-offset-4" href="/admin">Admin panel</a>
     </div>
 </div>
 </body>
