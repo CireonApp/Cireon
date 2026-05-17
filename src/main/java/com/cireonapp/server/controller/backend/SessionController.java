@@ -52,7 +52,8 @@ public class SessionController {
                 }
                 return ResponseEntity.status(HttpStatus.OK)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(new CheckSessionResponseDto(user.get().getUsername(), user.get().getDisplayName(), user.get().getPermissions()));
+                        .body(new CheckSessionResponseDto(user.get().getUsername(), user.get().getDisplayName(), user.get().getPermissions(),user.get().getSettings()));
+                        //TODO: maybe for future just pass the user and handle the Dto in the class itself...
             }
         }
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
