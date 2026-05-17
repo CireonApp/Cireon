@@ -1,5 +1,6 @@
 package com.cireonapp.server.initializer;
 
+import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.config.Config;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.source.Source;
@@ -31,7 +32,18 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
     public static ObjectRepository<Source> sourceRepository;
     public static ObjectRepository<Movie> movieRepository;
 
+    /**
+     * initializing the database will set this to false to prevent double logging.
+     */
+    public static boolean logInitialized = false;
+
+
     public static synchronized void bootstrap() throws IOException {
+        if (logInitialized){
+            ServerApplication.LOGGER.info("Initializing database...");
+            logInitialized = false;
+        }
+
         if (database != null && !database.isClosed()) {
             return;
         }
@@ -73,7 +85,7 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
         try {
             bootstrap();
         } catch (IOException e) {
-           e.printStackTrace();
+            e.printStackTrace();
         }
     }
 }

@@ -9,11 +9,9 @@ import com.cireonapp.server.util.DataDirHelper;
 import ch.qos.logback.classic.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.core.env.Environment;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -29,7 +27,6 @@ public class ServerApplication {
 
     public static void main(String[] args) throws Throwable {
         try {
-            // Silence Nitrite before Spring starts — only when not in dev profile
             silenceLogger("nitrite");
             silenceLogger("org.dizitart");
 
@@ -42,6 +39,7 @@ public class ServerApplication {
             unsilenceLogger("org.dizitart");
 
             SpringApplication app = new SpringApplication(ServerApplication.class);
+            Databases.logInitialized = true;
             app.addInitializers(new Databases());
 
             // Only set dynamic runtime properties here, NOT the banner info
