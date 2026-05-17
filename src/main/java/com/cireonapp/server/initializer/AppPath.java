@@ -1,11 +1,9 @@
 package com.cireonapp.server.initializer;
 
-import com.cireonapp.server.ServerApplication;
 import net.harawata.appdirs.AppDirs;
 import net.harawata.appdirs.AppDirsFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;

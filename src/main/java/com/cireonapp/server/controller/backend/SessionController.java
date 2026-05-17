@@ -62,7 +62,7 @@ public class SessionController {
     }
 
     @PostMapping("/revoke")
-    public static ResponseEntity<?> revokeSession(HttpServletRequest request, HttpServletResponse response, @RequestParam(value = "token", required = false) String tokenToRevoke) {
+    public static ResponseEntity<?> revokeSession(HttpServletRequest request, @RequestParam(value = "token", required = false) String tokenToRevoke) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 
         if (authCookie.isEmpty()) {
