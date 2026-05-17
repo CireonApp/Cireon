@@ -20,6 +20,7 @@ public class User {
     private String password;
     private String displayName;
     private Set<UserPermissions> permissions;
+    private UserSettings settings;
 
     public User(String username, String password, String displayName) {
         this.username = username;
@@ -30,6 +31,7 @@ public class User {
             this.displayName = displayName;
         }
         this.permissions = Set.of(UserPermissions.USER_READ, UserPermissions.CONTENT_READ);
+        this.settings = UserSettings.getDefault();
     }
     public User() {
     }
@@ -74,5 +76,13 @@ public class User {
                 ", displayName='" + displayName + '\'' +
                 ", permissions=" + permissions +
                 '}';
+    }
+
+    public UserSettings getSettings() {
+        return settings;
+    }
+
+    public void setSettings(UserSettings settings) {
+        this.settings = settings;
     }
 }

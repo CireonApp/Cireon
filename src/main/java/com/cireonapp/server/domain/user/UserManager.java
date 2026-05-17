@@ -2,9 +2,13 @@ package com.cireonapp.server.domain.user;
 
 import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.util.EncryptionHelper;
+import com.cireonapp.server.util.WebThemes;
+import jakarta.annotation.Nullable;
 import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.exceptions.UniqueConstraintException;
 
+import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 
@@ -15,7 +19,7 @@ public class UserManager {
      * @param user
      * @return true if the user was created successfully, false otherwise.
      */
-    public static boolean create(User user)  {
+    public static boolean create(User user) {
         if (user == null || user.getUsername() == null || user.getUsername().isBlank()) {
             return false;
         }
@@ -27,6 +31,69 @@ public class UserManager {
         user.setPassword(EncryptionHelper.encryptPassword_argon2(user.getPassword()));
         WriteResult result = Databases.userRepository.insert(user);
         return result.getAffectedCount() > 0;
+    }
+
+    public static boolean update(String username, User updateInfo) {
+        if (!exists(username)) return false;
+
+        Optional<User> existingUserOpt = get(username);
+        if (existingUserOpt.isEmpty()) return false;
+
+        User existingUser = existingUserOpt.get();
+
+        // Dynamically merge all non-null/non-empty fields from updateInfo
+        mergeFields(existingUser, updateInfo);
+
+        // Update in database
+        Databases.userRepository.update(existingUser);
+        return true;
+    }
+
+    /**
+     * Merges non-null/non-empty fields from source to target using reflection.
+     * Skips the 'username' field to prevent accidental changes.
+     * Special handling for 'password' field (applies encryption).
+     */
+    private static void mergeFields(User target, User source) {
+        Field[] fields = User.class.getDeclaredFields();
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+
+            try {
+                // Skip username field - never allow changes
+                if ("username".equals(field.getName())) {
+                    continue;
+                }
+
+                Object sourceValue = field.get(source);
+
+                // Skip null values
+                if (sourceValue == null) {
+                    continue;
+                }
+
+                // Skip empty strings
+                if (sourceValue instanceof String && ((String) sourceValue).isBlank()) {
+                    continue;
+                }
+
+                // Skip empty collections
+                if (sourceValue instanceof Collection && ((Collection<?>) sourceValue).isEmpty()) {
+                    continue;
+                }
+
+                // Special handling for password: encrypt before setting
+                if ("password".equals(field.getName())) {
+                    field.set(target, EncryptionHelper.encryptPassword_argon2((String) sourceValue));
+                } else {
+                    // Copy any other non-null/non-empty field
+                    field.set(target, sourceValue);
+                }
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("Failed to merge field: " + field.getName(), e);
+            }
+        }
     }
 
     /**
@@ -74,5 +141,21 @@ public class UserManager {
      */
     public static Set<User> getAll() {
         return Databases.userRepository.find().toSet();
+    }
+
+    public static int getCount() {
+        return Math.toIntExact(Databases.userRepository.size());
+    }
+
+    /**
+     * Get a theme from a USER
+     *
+     * @param user The user to get the theme label for
+     * @return The theme label for the user, or the default theme if the user is null
+     */
+    public static WebThemes getThemeLabel(@Nullable User user) {
+        if (user == null) return WebThemes.DARK;
+
+        return user.getSettings().getWebTheme();
     }
 }
