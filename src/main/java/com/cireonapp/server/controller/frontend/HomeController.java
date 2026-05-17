@@ -33,7 +33,7 @@ public class HomeController {
             return "redirect:/login";
         }
 
-        model.addAttribute("displayName", user.get().getDisplayName());
+        model.addAttribute("user", user.get());
         return "home/index";
     }
 }
