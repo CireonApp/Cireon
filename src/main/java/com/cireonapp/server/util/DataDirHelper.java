@@ -19,5 +19,10 @@ public class DataDirHelper {
         if (!contentDir.toFile().exists()) {
             contentDir.toFile().mkdirs();
         }
+
+        Path pluginsDir = dataDir.resolve("plugins");
+        if (!pluginsDir.toFile().exists()) {
+            pluginsDir.toFile().mkdirs();
+        }
     }
 }
