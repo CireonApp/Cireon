@@ -3,7 +3,7 @@ package com.cireonapp.server.util;
 import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
 
 public class EncryptionHelper {
-    private static final Argon2PasswordEncoder arg2SpringSecurity = new Argon2PasswordEncoder(16, 32, 1, 60000, 10);
+    private static final Argon2PasswordEncoder arg2SpringSecurity = Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
 
 
     public static String encryptPassword_argon2(String password){
