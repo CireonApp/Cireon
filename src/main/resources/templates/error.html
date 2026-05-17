@@ -1,67 +1,25 @@
 <!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <link rel="stylesheet" th:href="@{/assets/styles/global.css}"/>
-    <link rel="stylesheet" th:href="@{/assets/styles/login.css}">
+    <link rel="stylesheet" th:href="@{/assets/styles/style.css}">
     <meta charset="UTF-8">
-    <style>
-        .trace {
-            user-select: none;
-            cursor: pointer;
-            overflow-wrap: break-word;
-            display: none;
-            word-break: break-word;
-            padding: 3px;
-        }
-    </style>
-    <script th:src="@{/assets/scripts/login.js}"></script>
-    <script src="http://localhost:35729/livereload.js"></script>
+    <script th:src="@{/assets/scripts/error.js}" type="module"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script type="module">
-        let countdown = 4;
-        const timer = document.getElementById("redirect-countdown");
-        const trace = document.getElementById("trace");
-
-        const interval = setInterval(() => {
-            if (countdown >= 1) {
-                timer.innerText = `Redirecting to home page... (${countdown})`;
-                countdown--;
-            } else {
-                window.location.href = "/";
-            }
-        }, 1000);
-
-        document.addEventListener("keydown", (e) => {
-            if (e.code === "Space") {
-                window.enterDebug();
-            }
-        })
-
-        window.enterDebug = function () {
-            clearInterval(interval);
-            timer.remove();
-            trace.style.display = "block";
-        }
-
-        window.copyTrace = function () {
-            navigator.clipboard.writeText(trace.innerText).then(() => {
-                alert("Trace copied to clipboard");
-            }).catch(() => {
-                alert("Failed to copy trace to clipboard");
-            });
-        };
-    </script>
     <title>Error</title>
 </head>
-<body>
-<div class="container flex-col-center">
-    <img width="50%" th:src="@{/assets/icons/error_primary.svg}" alt="">
-    <div style="flex-wrap: wrap!important;" class="flex-row-center gap-1rem">
-        <p style="font-weight: bold; font-size: 3rem" th:text="${status}"></p>
-        <p style=" font-size: 2rem" th:text="${error}"></p>
-        <p style="opacity: 0.8; font-size: 1.5rem; text-align: center" th:text="${message}"></p>
-        <p onclick="enterDebug()" id="redirect-countdown">Redirecting to home page... (5)</p>
-        <p onclick="copyTrace()" class="trace error-message" id="trace" title="Click to copy" th:text="${trace}"></p>
+<body class="margin-0 min-h-svh flex justify-center items-center bg-gradient" th:classappend="${theme}">
+<div class="relative p-4 rounded-xl flex flex-col gap-4 w-full md:w-1/2 lg:w-[max(25%,480px)] items-center justify-center bg-background-modal light:bg-background-modal-light">
+    <span class="font-material-sharp font-semibold text-[10rem]/[9rem] light:text-black text-primary">error</span>
+    <div class="flex flex-row justify-center items-center flex-wrap gap-4">
+        <p class="font-bold text-5xl" th:text="${status}"></p>
+        <p class="text-3xl" th:text="${error}"></p>
+        <p class="text-stone-400 light:text-stone-600 text-2xl text-center" th:text="${message}"></p>
+        <p class="text-stone-400 light:text-stone-600" onclick="enterDebug()" id="redirect-countdown">Redirecting to home page... (5)</p>
+        <p style="display: none" onclick="copyTrace()"
+           class="bg-red-500/40 light:bg-red-300 w-full p-1 light:text-black text-white cursor-pointer break-word-legacy wrap-break-word"
+           id="trace" title="Click to copy" th:text="${trace}">
+
+        </p>
     </div>
 </div>
 </body>
