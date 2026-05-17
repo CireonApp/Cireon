@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<header th:fragment="header(user)"
+        class="w-full border-b border-white/10 bg-background-modal/95 px-4 py-3 shadow-sm backdrop-blur md:px-[8%] xl:px-[16%]">
+    <script th:src="@{/assets/scripts/header.js}" type="module"></script>
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-2 md:flex-row md:items-center">
+            <a href="/" class="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-zinc-900/90 px-3 shadow-sm hover:bg-zinc-800/90">
+                <img class="h-8 w-8" th:src="@{/assets/icons/cireon_nobackground.svg}" alt="Cireon logo">
+                <p class="text-2xl font-semibold tracking-tight">Cireon</p>
+            </a>
+            <nav class="flex h-11 items-center gap-1 rounded-lg border border-white/10 bg-zinc-900/80 p-1">
+                <a class="rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/movies">Movies</a>
+                <a class="rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/shows">Shows</a>
+                <a class="rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/music">Music</a>
+            </nav>
+        </div>
+        <div class="flex w-full items-center gap-3 lg:w-auto">
+            <div class="w-full lg:w-104" th:replace="~{fragments/header::search}"></div>
+            <div th:replace="~{fragments/header::userBlock(${user})}"></div>
+        </div>
+    </div>
+</header>
+
+<div th:fragment="search" class="flex h-11 w-full items-center">
+    <label for="header-search" class="sr-only">Search</label>
+    <input type="text" placeholder="Search for anything..."
+           class="h-full w-full rounded-l-md border border-white/10 bg-zinc-900 px-3 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:bg-stone-100 light:text-black"
+           id="header-search">
+    <button class="h-full rounded-r-md bg-primary px-3 text-2xl font-material-rounded text-white transition hover:brightness-110 active:brightness-95" aria-label="Search">search
+    </button>
+</div>
+
+
+<div th:fragment="userBlock(user)" class="group relative flex h-11 items-center justify-center">
+    <button type="button"
+            class="flex h-full items-center gap-1 rounded-md border border-white/10 bg-zinc-900 px-3 pr-1.5 text-sm font-medium hover:bg-zinc-800">
+        <span class="max-w-32 truncate" th:text="${user.displayName}"></span>
+        <span class="font-material-rounded text-base text-zinc-400">expand_more</span>
+    </button>
+    <div class="absolute right-0 top-full z-50 hidden pt-2 group-hover:flex group-focus-within:flex">
+        <div class="flex min-w-44 flex-col gap-y-1 rounded-md border border-white/10 bg-background-modal p-1 shadow-xl">
+            <a href="/settings" type="button"
+               class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
+                Settings<span class="font-material-outlined text-lg">settings</span></a>
+            <a href="/watchlist" type="button"
+               class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
+                My list<span class="font-material-outlined text-lg">bookmark</span></a>
+            <button onclick="logout()" type="button"
+                    class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-red-950/50 active:bg-red-950/50">
+                Logout<span class="font-material-outlined text-lg">logout</span></button>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
