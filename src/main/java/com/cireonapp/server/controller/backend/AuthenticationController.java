@@ -7,6 +7,7 @@ import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.dto.*;
 import com.cireonapp.server.util.CookieHelper;
+import com.cireonapp.server.util.EncryptionHelper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -67,12 +68,13 @@ public class AuthenticationController {
         Optional<User> user = UserManager.get(username);
 
         if (user.isEmpty()) {
+            EncryptionHelper.encryptPassword_argon2(password);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.INCORRECT_USERNAME_PASSWORD);
         }
 
-        boolean successful = Authentication.authenticateUser(user.get().getUsername(), password);
+        boolean successful = Authentication.authenticateExistingUser(user.get(), password);
 
         if (!successful) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -90,7 +92,7 @@ public class AuthenticationController {
 
         Cookie newCookie = new Cookie(AUTH_COOKIE_NAME, session.get().getToken());
         newCookie.setMaxAge(31536000); // 1 Year
-        newCookie.setSecure(false);
+        newCookie.setSecure(false); // Does not matter since it's a local app to run on a home server...
         newCookie.setHttpOnly(true);
         newCookie.setPath("/");
         newCookie.setValue(session.get().getToken());

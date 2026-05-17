@@ -9,6 +9,7 @@ import java.util.Optional;
 public class Authentication {
     /**
      * Authenticates a user with the given username and password.
+     *
      * @param username The username of the user to authenticate.
      * @param password The password of the user to authenticate.
      * @return true if the user was authenticated successfully, false otherwise.
@@ -19,5 +20,9 @@ public class Authentication {
         if (user.isEmpty()) return false;
 
         return EncryptionHelper.matchesPassword_argon2(password, user.get().getPassword());
+    }
+
+    public static boolean authenticateExistingUser(User user, String password) {
+        return EncryptionHelper.matchesPassword_argon2(password, user.getPassword());
     }
 }
