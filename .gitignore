@@ -32,4 +32,9 @@ build/
 ### VS Code ###
 .vscode/
 
-data
+### Cireon data ###
+data/
+
+
+### Dependencies ###
+node_modules/

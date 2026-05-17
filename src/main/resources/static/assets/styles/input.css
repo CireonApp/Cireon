@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+:root {
+    /*common*/
+    --primary: #00BABA;
+    --primary-100: #009595;
+    --primary-200: #007172;
+    --primary-300: #004f51;
+    --primary-400: #002e32;
+
+    /*dark*/
+    --background: #171717;
+    --background-modal: #0e0e0e;
+
+    /*light*/
+    --background-light: #c8c8c8;
+    --background-modal-light: #d8d8d8;
+}
+
+@theme{
+    /*Colors*/
+    --color-primary: var(--primary);
+    --color-primary-100: var(--primary-100);
+    --color-primary-200: var(--primary-200);
+    --color-primary-300: var(--primary-300);
+    --color-primary-400: var(--primary-400);
+    --color-background: var(--background);
+    --color-background-modal: var(--background-modal);
+    --color-background-light: var(--background-light);
+    --color-background-modal-light: var(--background-modal-light);
+
+    /*fonts*/
+    --font-roboto: 'Roboto', sans-serif;
+    --font-material-outlined: 'Material Outlined';
+    --font-material-rounded: 'Material Rounded';
+    --font-material-sharp: 'Material Sharp';
+}
+
+@layer components {
+    .break-word-legacy {
+        word-break: break-word;
+    }
+}
+
+@custom-variant light (&:where(.light, .light *));
+
+@font-face {
+    font-family: 'Roboto';
+    src: url("../fonts/Roboto.ttf") format("truetype");
+    font-display: swap;
+    font-weight: 100 900;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Material Outlined';
+    src: url("../fonts/MaterialSymbolsOutlined.ttf") format("truetype");
+    font-display: block;
+    font-weight: 100 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Material Rounded';
+    src: url("../fonts/MaterialSymbolsRounded.ttf") format("truetype");
+    font-display: block;
+    font-weight: 100 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Material Sharp';
+    src: url("../fonts/MaterialSymbolsSharp.ttf") format("truetype");
+    font-display: block;
+    font-weight: 100 700;
+    font-style: normal;
+}
+
+
+body {
+    @apply bg-background font-roboto text-white light:text-black;
+}
+
+.bg-gradient {
+    @apply bg-[radial-gradient(125%_125%_at_50%_10%,var(--background)_40%,var(--primary)_100%)]
+    light:bg-[radial-gradient(125%_125%_at_50%_10%,var(--background-light)_40%,var(--primary)_100%)] ;
+}
+
+.seperator {
+    @apply w-full bg-stone-500/65 light:bg-stone-50/65 h-0.5;
+}
+
+.font-material-rounded{
+    user-select: none;
+}
+
+.font-material-sharp{
+    user-select: none;
+}

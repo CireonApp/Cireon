@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "dev:css": "tailwindcss -i src/main/resources/static/assets/styles/input.css -o src/main/resources/static/assets/styles/style.css --watch",
+    "dev:spring": "mvnw.cmd spring-boot:run",
+    "dev": "concurrently --names \"tailwind,spring\" \"npm run dev:css\" \"npm run dev:spring\""
+  },
+  "type": "commonjs",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
