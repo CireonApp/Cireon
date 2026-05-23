@@ -30,7 +30,7 @@
         <div class="flex w-full flex-col gap-1.5">
             <label class="pl-1 text-sm font-medium text-zinc-200 light:text-zinc-800" for="username">Username</label>
             <input class="w-full rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
-                   maxlength="18" minlength="6" pattern="^[a-zA-Z0-9_]+$" required id="username" type="text"/>
+                   maxlength="18" minlength="6" pattern="^[a-zA-Z0-9_]+$" required id="username" type="text" th:value="${usernameInput}"/>
         </div>
 
         <div class="mb-1 flex w-full flex-col gap-1.5">
