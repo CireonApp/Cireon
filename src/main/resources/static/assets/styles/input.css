@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
 :root {
+
+    user-select: none;
     /*common*/
     --primary: #00BABA;
     --primary-100: #009595;
@@ -34,11 +36,37 @@
     --font-material-outlined: 'Material Outlined';
     --font-material-rounded: 'Material Rounded';
     --font-material-sharp: 'Material Sharp';
+
+    --animate-bg-gloss: bg-gloss 1.6s linear infinite;
+
+    @keyframes bg-gloss {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
 }
 
 @layer components {
     .break-word-legacy {
         word-break: break-word;
+    }
+
+    .gloss-surface {
+        background-size: 250% 100%;
+        background-position: -200% 0;
+        background-repeat: no-repeat;
+        background-image: linear-gradient(
+                120deg,
+                transparent 0%,
+                transparent 42%,
+                rgba(255, 255, 255, 0.55) 50%,
+                transparent 58%,
+                transparent 100%
+        );
     }
 }
 
@@ -90,10 +118,14 @@ body {
     @apply w-full bg-stone-500/65 light:bg-stone-50/65 h-0.5;
 }
 
-.font-material-rounded{
+.font-material-rounded {
     user-select: none;
 }
 
-.font-material-sharp{
+.font-material-sharp {
     user-select: none;
+}
+
+.horizontal-scrollbar {
+    @apply scrollbar-thumb-zinc-400 pb-2;
 }
