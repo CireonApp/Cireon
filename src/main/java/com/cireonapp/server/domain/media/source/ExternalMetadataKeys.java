@@ -1,16 +1,27 @@
 package com.cireonapp.server.domain.media.source;
 
+import com.cireonapp.server.domain.media.common.ExternalMetadataSources;
+
 public class ExternalMetadataKeys {
-    private String movieDB;
+    private ExternalMetadataSources preferredExternalSource;
+    private String TMDB;
 
     public ExternalMetadataKeys() {
     }
 
-    public String getMovieDB() {
-        return movieDB;
+    public String getTMDB() {
+        return TMDB;
     }
 
-    public void setMovieDB(String movieDB) {
-        this.movieDB = movieDB;
+    public void setTMDB(String TMDB) {
+        this.TMDB = TMDB;
+    }
+
+    public ExternalMetadataSources getPreferredExternalSource() {
+        return preferredExternalSource;
+    }
+
+    public void setPreferredExternalSource(ExternalMetadataSources preferredExternalSource) {
+        this.preferredExternalSource = preferredExternalSource;
     }
 }
