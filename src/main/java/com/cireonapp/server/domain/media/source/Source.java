@@ -1,8 +1,13 @@
 package com.cireonapp.server.domain.media.source;
 
+import org.dizitart.no2.repository.annotations.Id;
+
 import java.nio.file.Path;
+import java.util.UUID;
 
 public class Source {
+    @Id
+    private String id;
     private Path dirPath;
     private SourceType type;
     private boolean enabled;
@@ -12,7 +17,8 @@ public class Source {
     private ExternalMetadataKeys externalMetadataKeys;
     private String preferredLanguage;
 
-    public Source(Path dirPath, SourceType type, boolean enabled, boolean watchForChanges, String name, String description, ExternalMetadataKeys externalMetadataKeys, String preferredLanguage) {
+    public Source(String id, Path dirPath, SourceType type, boolean enabled, boolean watchForChanges, String name, String description, ExternalMetadataKeys externalMetadataKeys, String preferredLanguage) {
+        this.id = id;
         this.dirPath = dirPath;
         this.type = type;
         this.enabled = enabled;
@@ -24,6 +30,8 @@ public class Source {
     }
 
     public Source() {
+        id = UUID.randomUUID().toString();
+
     }
 
     public Path getDirPath() {
@@ -48,10 +56,11 @@ public class Source {
 
     /**
      * If enabled is set to false, watchForChanges will also be set to false. If enabled is set to true, watchForChanges will not be changed.
+     *
      * @param enabled
      */
     public void setEnabled(boolean enabled) {
-        if(!enabled)
+        if (!enabled)
             this.watchForChanges = false;
         this.enabled = enabled;
     }
@@ -62,10 +71,11 @@ public class Source {
 
     /**
      * If watchForChanges is set to true, enabled will also be set to true. If watchForChanges is set to false, enabled will not be changed.
+     *
      * @param watchForChanges
      */
     public void setWatchForChanges(boolean watchForChanges) {
-        if(watchForChanges)
+        if (watchForChanges)
             this.enabled = true;
         this.watchForChanges = watchForChanges;
     }
@@ -101,5 +111,13 @@ public class Source {
 
     public void setPreferredLanguage(String preferredLanguage) {
         this.preferredLanguage = preferredLanguage;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 }
