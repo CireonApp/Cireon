@@ -3,7 +3,6 @@ package com.cireonapp.server.initializer;
 import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.domain.media.source.Source;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static com.sun.nio.file.ExtendedWatchEventModifier.FILE_TREE;
 import static java.nio.file.StandardWatchEventKinds.*;
@@ -52,18 +50,18 @@ public class FileWatcher implements ApplicationContextInitializer<ConfigurableAp
 
     }
 
-    private static final Map<String, WatchKey> registeredPaths = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<String, WatchKey> registeredSources = new java.util.concurrent.ConcurrentHashMap<>();
 
-    public static boolean RegisterPath(Source source) {
-        if (registeredPaths.containsKey(source.getDirPath().toString())) {
+    public static boolean registerSource(Source source) {
+        if (registeredSources.containsKey(source.getId())) {
             ServerApplication.LOGGER.warn("Attempted to register path that is already registered: " + source.getDirPath());
             return false;
         }
         try {
             WatchKey key = Path.of(source.getDirPath().toString()).register(watcher, new WatchEvent.Kind[]{ENTRY_MODIFY, ENTRY_CREATE, ENTRY_DELETE}, FILE_TREE);
-            registeredPaths.put(source.getDirPath().toString(), key);
+            registeredSources.put(source.getId(), key);
             ServerApplication.LOGGER.info("Registered path for watching: " + source.getDirPath());
-            handleRegisteredPaths(source);
+            handleRegisteredSources(source);
             return true;
         } catch (IOException e) {
             ServerApplication.LOGGER.warn("Failed to register path for watching: " + source.getDirPath(), e);
@@ -71,28 +69,27 @@ public class FileWatcher implements ApplicationContextInitializer<ConfigurableAp
         }
     }
 
-    public static boolean UnregisterPath(String path) {
-        if (registeredPaths.containsKey(path)) {
-            registeredPaths.get(path).cancel();
-            registeredPaths.remove(path);
+    public static boolean UnregisterSource(Source source) {
+        if (registeredSources.containsKey(source.getId())) {
+            registeredSources.get(source.getId()).cancel();
+            registeredSources.remove(source.getId());
             return true;
         } else {
-            ServerApplication.LOGGER.warn( "Attempted to unregister path that was not registered: " + path);
+            ServerApplication.LOGGER.warn( "Attempted to unregister path that was not registered: " + source.getDirPath());
             return false;
         }
     }
 
     public static Set<String> GetRegisteredPaths() {
-        return registeredPaths.keySet();
+        return registeredSources.keySet();
     }
 
 
-    private static void handleRegisteredPaths(Source source) {
+    private static void handleRegisteredSources(Source source) {
         switch (source.getType()) {
             case MOVIE:
                 MovieManager.handleMovieSourceUpdate(source);
                 break;
-
             case TV_SHOW:
                 break;
         }
