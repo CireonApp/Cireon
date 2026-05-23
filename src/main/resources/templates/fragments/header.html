@@ -1,24 +1,28 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
-
 <header th:fragment="header(user)"
-        class="w-full border-b border-white/10 bg-background-modal/95 px-4 py-3 shadow-sm backdrop-blur md:px-[8%] xl:px-[16%]">
+        class="z-1000 w-full top-0 sticky border-b border-white/10 bg-background-modal/70 p-4 shadow-sm backdrop-blur-md md:px-[8%] xl:px-[16%]">
     <script th:src="@{/assets/scripts/header.js}" type="module"></script>
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex flex-col gap-2 md:flex-row md:items-center">
-            <a href="/" class="flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-zinc-900/90 px-3 shadow-sm hover:bg-zinc-800/90">
-                <img class="h-8 w-8" th:src="@{/assets/icons/cireon_nobackground.svg}" alt="Cireon logo">
-                <p class="text-2xl font-semibold tracking-tight">Cireon</p>
-            </a>
-            <nav class="flex h-11 items-center gap-1 rounded-lg border border-white/10 bg-zinc-900/80 p-1">
-                <a class="rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/movies">Movies</a>
-                <a class="rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/shows">Shows</a>
-                <a class="rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/music">Music</a>
+    <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-row gap-2 sm:justify-between">
+            <div class="flex w-full items-center justify-between gap-2 md:w-auto">
+                <a href="/" class="justify-center flex h-11 items-center gap-2 rounded-lg border border-white/10 bg-zinc-900/90 px-3 shadow-sm hover:bg-zinc-800/90 w-full sm:w-fit">
+                    <div class="flex flex-row gap-2 items-center justify-center">
+                        <img class="h-8 w-8" th:src="@{/assets/icons/cireon_nobackground.svg}" alt="Cireon logo">
+                        <p class="text-2xl font-semibold tracking-tight">Cireon</p>
+                    </div>
+                </a>
+                <div th:replace="~{fragments/header::mobileNavMenu}"></div>
+            </div>
+            <nav class="hidden items-center gap-1 rounded-lg border border-white/10 bg-zinc-900/80 sm:flex">
+                <a class="flex justify-center items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/movies"><span class="font-material-rounded text-xl">movie</span>Movies</a>
+                <a class="flex justify-center items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/shows"><span class="font-material-rounded text-xl">tv</span>Shows</a>
+                <a class="flex justify-center items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-zinc-100 hover:bg-zinc-800" href="/music"><span class="font-material-rounded font-extralight text-xl">music_note_2</span>Music</a>
             </nav>
         </div>
         <div class="flex w-full items-center gap-3 lg:w-auto">
-            <div class="w-full lg:w-104" th:replace="~{fragments/header::search}"></div>
+            <div class="w-full lg:w-120" th:replace="~{fragments/header::search}"></div>
             <div th:replace="~{fragments/header::userBlock(${user})}"></div>
         </div>
     </div>
@@ -33,11 +37,23 @@
     </button>
 </div>
 
+<div th:fragment="mobileNavMenu" class="sm:hidden relative flex h-11 items-center justify-center">
+    <details class="group relative">
+        <summary class="flex h-11 list-none cursor-pointer items-center rounded-md border border-white/10 bg-zinc-900 aspect-square justify-center text-2xl font-medium hover:bg-zinc-800">
+            <span class="font-material-sharp text-zinc-400">menu</span>
+        </summary>
+        <nav class="absolute right-0 top-full z-50 mt-2 flex min-w-40 flex-col gap-y-1 rounded-md border border-white/10 bg-background-modal p-1 shadow-xl">
+            <a class="flex items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10" href="/movies">Movies<span class="font-material-rounded text-lg">movie</span></a>
+            <a class="flex items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10" href="/shows">Shows<span class="font-material-rounded text-lg">tv</span></a>
+            <a class="flex items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10" href="/music">Music<span class="font-material-rounded text-lg">music_note_2</span></a>
+        </nav>
+    </details>
+</div>
 
-<div th:fragment="userBlock(user)" class="group relative flex h-11 items-center justify-center">
+
+<div th:fragment="dropdown-menu" class="group relative flex h-11 items-center justify-center">
     <button type="button"
-            class="flex h-full items-center gap-1 rounded-md border border-white/10 bg-zinc-900 px-3 pr-1.5 text-sm font-medium hover:bg-zinc-800">
-        <span class="max-w-32 truncate" th:text="${user.displayName}"></span>
+            class="flex h-full items-center cursor-pointer gap-1 rounded-md border border-white/10 bg-zinc-900 px-3 pr-1.5 text-sm font-medium hover:bg-zinc-800">
         <span class="font-material-rounded text-base text-zinc-400">expand_more</span>
     </button>
     <div class="absolute right-0 top-full z-50 hidden pt-2 group-hover:flex group-focus-within:flex">
@@ -48,8 +64,25 @@
             <a href="/watchlist" type="button"
                class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
                 My list<span class="font-material-outlined text-lg">bookmark</span></a>
+        </div>
+    </div>
+</div>
+<div th:fragment="userBlock(user)" class="group relative flex h-11 items-center justify-center">
+    <button type="button"
+            class="flex h-full cursor-pointer items-center gap-1 rounded-md border border-white/10 bg-zinc-900 px-3 pr-1.5 text-sm font-medium hover:bg-zinc-800">
+        <span class="max-w-32 truncate" th:text="${user.displayName}"></span>
+        <span class="font-material-rounded text-base text-zinc-400 rotate-90 group-hover:rotate-0 transition-all duration-400 group-focus-within:rotate-0">expand_more</span>
+    </button>
+    <div class="absolute right-0 top-full z-50 pt-2 flex overflow-hidden max-h-0 opacity-0 -translate-y-1 pointer-events-none transition-all duration-300 group-hover:max-h-56 group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto group-focus-within:max-h-56 group-focus-within:opacity-100 group-focus-within:translate-y-0 group-focus-within:pointer-events-auto">
+        <div class="flex min-w-44 flex-col gap-y-1 rounded-md border border-white/10 bg-background-modal p-1 shadow-xl">
+            <a href="/settings" type="button"
+               class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
+                Settings<span class="font-material-outlined text-lg">settings</span></a>
+            <a href="/watchlist" type="button"
+               class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
+                My list<span class="font-material-outlined text-lg">bookmark</span></a>
             <button onclick="logout()" type="button"
-                    class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-red-950/50 active:bg-red-950/50">
+                    class="cursor-pointer flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-red-950/50 active:bg-red-950/50">
                 Logout<span class="font-material-outlined text-lg">logout</span></button>
         </div>
     </div>
