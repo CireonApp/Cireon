@@ -50,26 +50,11 @@ public class MovieManager {
     }
 
     public static List<Movie> getByCreationDate(SortOrder order, int limit) {
-        List<Movie> movies = new ArrayList<>(Databases.movieRepository.find(Filter.ALL, FindOptions.orderBy("created", order).limit(limit)).toList());
-        return movies;
+        return new ArrayList<>(Databases.movieRepository.find(Filter.ALL, FindOptions.orderBy("created", order).limit(limit)).toList());
     }
 
     public static List<Movie> getByReleaseDate(SortOrder order, int limit) {
-        List<Movie> movies = new ArrayList<>(Databases.movieRepository.find(Filter.ALL, FindOptions.orderBy("metadata.releaseDateTimestamp", order).limit(limit)).toList());
-        return movies;
-    }
-
-    private static LocalDate parseReleaseDate(Movie movie) {
-        if (movie == null || movie.getMetadata() == null) return null;
-
-        String releaseDate = movie.getMetadata().getReleaseDate();
-        if (releaseDate == null || releaseDate.isBlank()) return null;
-
-        try {
-            return LocalDate.parse(releaseDate, RELEASE_DATE_FORMATTER);
-        } catch (DateTimeParseException e) {
-            return null;
-        }
+        return new ArrayList<>(Databases.movieRepository.find(Filter.ALL, FindOptions.orderBy("metadata.releaseDateTimestamp", order).limit(limit)).toList());
     }
 
     public static Optional<Movie> get(String id) {

@@ -1,14 +1,9 @@
 package com.cireonapp.server.controller.backend;
 
 import com.cireonapp.server.ServerApplication;
-import com.cireonapp.server.domain.media.common.ExternalMetadataSources;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
-import com.cireonapp.server.domain.media.source.ExternalMetadataKeys;
-import com.cireonapp.server.domain.media.source.Source;
-import com.cireonapp.server.domain.media.source.SourceType;
 import com.cireonapp.server.dto.ErrorResponseDto;
-import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.service.ContentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -36,6 +31,9 @@ public class StreamingController {
 
         Optional<Movie> movie = MovieManager.get(id);
 
+        if(movie.isEmpty()){
+            return Mono.empty();
+        }
 
         String videoPath = movie.get().getFilePath().toString();
 

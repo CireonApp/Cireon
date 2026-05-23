@@ -102,9 +102,9 @@ public class MovieDB {
     }
 
     private static MovieDb attachDetails_tmdb(MovieMetadata metadata, int movieId, Source source) throws TmdbException {
-        String language = null;
+        String language;
 
-        if (source.getPreferredLanguage() == null || source.getPreferredLanguage().equals("")) {
+        if (source.getPreferredLanguage() == null || source.getPreferredLanguage().isEmpty()) {
             language = "null,en-US";
         } else {
             language = String.format("null,%s", source.getPreferredLanguage());

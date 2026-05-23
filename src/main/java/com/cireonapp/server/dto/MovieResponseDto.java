@@ -1,9 +1,7 @@
 package com.cireonapp.server.dto;
 
-import com.cireonapp.server.domain.media.common.Artwork;
 import com.cireonapp.server.domain.media.common.Genres;
 import com.cireonapp.server.domain.media.movie.Movie;
-import org.dizitart.no2.repository.annotations.Id;
 
 import java.util.HashSet;
 import java.util.Set;

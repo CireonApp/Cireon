@@ -7,7 +7,6 @@ import org.dizitart.no2.repository.annotations.Entity;
 import org.dizitart.no2.repository.annotations.Id;
 import org.dizitart.no2.repository.annotations.Index;
 
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
