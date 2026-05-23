@@ -1,8 +1,10 @@
 package com.cireonapp.server.domain.media.movie;
 
 import com.cireonapp.server.domain.media.common.Artwork;
+import com.cireonapp.server.domain.media.common.Genres;
 import org.dizitart.no2.index.IndexType;
 import org.dizitart.no2.repository.annotations.Entity;
+import org.dizitart.no2.repository.annotations.Id;
 import org.dizitart.no2.repository.annotations.Index;
 
 import java.time.LocalDateTime;
@@ -11,9 +13,10 @@ import java.util.Set;
 
 
 @Entity(value = "movieMetadata", indices = {
-        @Index(fields = "title", type = IndexType.FULL_TEXT)
+        @Index(fields = "title", type = IndexType.FULL_TEXT),
 })
 public class MovieMetadata {
+    @Id
     private int id;
     private String title;
     private String originalTitle;
@@ -21,17 +24,14 @@ public class MovieMetadata {
     private String releaseDate;
     private Artwork artworks;
     private int runtime;
-    private Set<MovieGenres> genres = new HashSet<>();
-    ;
+    private Set<Genres> genres = new HashSet<>();
     private Set<String> alternativeTitles = new HashSet<>();
-    ;
     private boolean adult;
-
-
     private String tagline;
-    private LocalDateTime lastUpdated;
+    private long lastUpdated;
+    private long releaseDateTimestamp;
 
-    public MovieMetadata(int id, String title, String originalTitle, String description, String releaseDate, Artwork artworks, int runtime, Set<MovieGenres> genres, Set<String> alternativeTitles, boolean adult, String tagline, LocalDateTime lastUpdated) {
+    public MovieMetadata(int id, String title, String originalTitle, String description, String releaseDate, Artwork artworks, int runtime, Set<Genres> genres, Set<String> alternativeTitles, boolean adult, String tagline, long lastUpdated) {
         this.id = id;
         this.title = title;
         this.originalTitle = originalTitle;
@@ -89,11 +89,11 @@ public class MovieMetadata {
         this.runtime = runtime;
     }
 
-    public Set<MovieGenres> getGenres() {
+    public Set<Genres> getGenres() {
         return genres;
     }
 
-    public void setGenres(Set<MovieGenres> genres) {
+    public void setGenres(Set<Genres> genres) {
         this.genres = genres;
     }
 
@@ -105,11 +105,11 @@ public class MovieMetadata {
         this.alternativeTitles = alternativeTitles;
     }
 
-    public LocalDateTime getLastUpdated() {
+    public long getLastUpdated() {
         return lastUpdated;
     }
 
-    public void setLastUpdated(LocalDateTime lastUpdated) {
+    public void setLastUpdated(long lastUpdated) {
         this.lastUpdated = lastUpdated;
     }
 
@@ -159,5 +159,13 @@ public class MovieMetadata {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public long getReleaseDateTimestamp() {
+        return releaseDateTimestamp;
+    }
+
+    public void setReleaseDateTimestamp(long releaseDateTimestamp) {
+        this.releaseDateTimestamp = releaseDateTimestamp;
     }
 }
