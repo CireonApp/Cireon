@@ -2,6 +2,7 @@ package com.cireonapp.server;
 
 import com.cireonapp.server.domain.config.Config;
 import com.cireonapp.server.domain.config.ConfigManager;
+import com.cireonapp.server.initializer.AppPath;
 import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.initializer.SourceSubscription;
@@ -49,7 +50,8 @@ public class ServerApplication {
 
             app.addInitializers(new FileWatcher(), new SourceSubscription());
             application = app.run(args);
-            LOGGER.info("Server started on port " + config.getPort());
+            LOGGER.info("Data folder location: {}", AppPath.APP_DIR);
+            LOGGER.info("Server started on port {}", config.getPort());
         } catch (Throwable e) {
             // DevTools throws SilentExitException intentionally on restart — let it through
             if (!e.getClass().getName().contains("SilentExitException")) {
