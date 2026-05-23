@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--media is the movie or show-->
+<!--/*@thymesVar id="media" type="com.cireonapp.server.domain.media.common.Billboard"*/-->
+<div th:fragment="billboard(media)"
+     class="p-4 w-full h-fit">
+    <div class="overflow-hidden group relative w-full h-full rounded-2xl border border-white/10 bg-background-modal/95 p-4 shadow-2xl backdrop-blur light:bg-background-modal-light flex flex-col justify-end">
+
+        <img id="billboard-background"
+             th:src="|/api/artwork?type=background&id=${media.id}|"
+             class="z-0 absolute top-0 left-0 w-full h-full group-hover:scale-105 transition-all group-hover:opacity-60 duration-1000 object-cover opacity-50"
+             alt="">
+
+        <div class="absolute inset-0 z-10 bg-linear-to-t to-white/20  from-transparent md:bg-linear-to-l"></div>
+
+        <div class="z-20 relative w-full flex flex-col md:flex-row md:justify-between md:items-end gap-6 p-2 sm:p-6 md:p-10">
+
+            <div class="flex flex-col gap-4 max-w-xl">
+                <div class="w-full md:max-w-120  backdrop-blur-xs border border-white/10 rounded-md p-3 sm:p-4 bg-background-modal-light/20">
+                    <img class="w-full h-auto object-contain" th:src="|/api/artwork?type=logo&id=${media.id}|"
+                         alt="Logo">
+                </div>
+
+                <div class="flex flex-col gap-3">
+                    <div class="flex flex-wrap items-center gap-2 text-sm sm:text-base md:text-lg font-medium">
+                        <div class="border  border-white/10 backdrop-blur-sm p-1 px-2.5 rounded-md bg-background-modal/50 flex flex-row gap-1 justify-center items-center">
+                            <p class="font-material-rounded text-xl md:text-2xl">calendar_month</p>
+                            <p class="whitespace-nowrap"
+                               th:text="${media.releaseDate}"></p>
+                        </div>
+                        <div class="border border-white/10 backdrop-blur-sm p-1 px-2.5 rounded-md bg-background-modal/50 flex flex-row gap-1 justify-center items-center">
+                            <p class="font-material-rounded text-xl md:text-2xl">timer</p>
+                            <p class="whitespace-nowrap"
+                               th:text="|${media.runtime} Mins|"></p>
+                        </div>
+                        <p class="font-material-rounded text-xl md:text-2xl border border-white/10 backdrop-blur-sm p-1 px-2.5 rounded-md bg-background-modal/50 text-red-400 whitespace-nowrap"
+                           th:if="${media.isAdult}">18_up_rating</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-1.5 text-xs sm:text-sm">
+                        <p th:each="item : ${media.genres}"
+                           class="border border-white/5 backdrop-blur-sm rounded-md p-1 px-2 bg-background-modal/50"
+                           th:text="${item}"></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="w-full md:w-auto pt-2 md:pt-0">
+                <a href="/watch/test"
+                   class="gloss-surface w-full flex gap-0.5 flex-row items-center justify-center md:w-auto text-center group-hover:animate-bg-gloss md:group-hover:scale-105 duration-300 tracking-widest break-keep whitespace-nowrap bg-primary rounded-lg py-3 px-8 font-black text-white shadow-sm transition hover:brightness-95 active:brightness-90 light:text-primary-400">
+                    <span class="font-material-sharp text-3xl font-medium">play_circle</span>
+                    Watch Now
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!--/*@thymesVar id="carousel" type="com.cireonapp.server.domain.media.common.Carousel"*/-->
+<div class="rounded-2xl border border-white/10 bg-background-modal/95 p-4 shadow-2xl backdrop-blur light:bg-background-modal-light"
+     th:fragment="carousel(carousel)">
+    <div class="flex flex-row flex-wrap items-center justift-center gap-2 mb-4">
+        <p class="text-xl" th:text="${carousel.title}"></p>
+        <p class="text-zinc-400" th:text="${carousel.description}"></p>
+    </div>
+    <div class=" flex flex-row gap-2 overflow-x-auto horizontal-scrollbar overflow-y-hidden">
+        <th:block th:each="poster : ${carousel.posters}">
+            <div th:replace="fragments/components::carouselPoster(${poster})"></div>
+        </th:block>
+    </div>
+</div>
+
+<!--/*@thymesVar id="poster" type="com.cireonapp.server.domain.media.common.CarouselPoster"*/-->
+<a class="select-none rounded-md lg:w-40 w-24 shrink-0 overflow-hidden group border hover:bg-background-light/10 border-white/10 bg-background-modal/95 md:p-1 transition-all duration-500 cursor-pointer"
+   th:fragment="carouselPoster(poster)">
+    <p th:text="${poster.releaseDate}"> </p>
+    <img draggable="false" class="w-full group-hover:scale-105 transition-all duration-500 rounded-sm" th:title="${poster.title}" th:src="|/api/artwork?type=poster&id=${poster.hash}|" alt="">
+</a>
+
+
+</body>
+</html>
