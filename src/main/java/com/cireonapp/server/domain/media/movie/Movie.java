@@ -1,9 +1,9 @@
 package com.cireonapp.server.domain.media.movie;
 
-import com.cireonapp.server.domain.media.common.Overrides;
 import org.dizitart.no2.repository.annotations.Id;
 
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 
@@ -15,18 +15,21 @@ public class Movie {
     private String hash;
     private Path filePath;
     private MovieMetadata metadata;
-    private LocalDateTime lastUpdated;
-    private Overrides overrides;
+    private long lastUpdated;
+    private MovieMetadata overrides;
+    private long created;
 
     public Movie(String hash, Path filePath, MovieMetadata metadata) {
         this.hash = hash;
         this.filePath = filePath;
         this.metadata = metadata;
-        lastUpdated = LocalDateTime.now();
+        lastUpdated = Timestamp.valueOf(LocalDateTime.now()).getTime();
+        created = Timestamp.valueOf(LocalDateTime.now()).getTime();
     }
 
     public Movie(){
-        lastUpdated = LocalDateTime.now();
+        lastUpdated = Timestamp.valueOf(LocalDateTime.now()).getTime();
+        created = Timestamp.valueOf(LocalDateTime.now()).getTime();
     }
 
     public String getHash() {
@@ -54,11 +57,19 @@ public class Movie {
     }
 
 
-    public LocalDateTime getLastUpdated() {
+    public long getLastUpdated() {
         return lastUpdated;
     }
 
-    public void setLastUpdated(LocalDateTime lastUpdated) {
-        this.lastUpdated = lastUpdated;
+    public void setLastUpdated() {
+        this.lastUpdated = Timestamp.valueOf(LocalDateTime.now()).getTime();
+    }
+
+    public long getCreated() {
+        return created;
+    }
+
+    public void setCreated(long created) {
+        this.created = created;
     }
 }
