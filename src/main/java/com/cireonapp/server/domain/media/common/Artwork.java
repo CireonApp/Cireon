@@ -1,6 +1,13 @@
 package com.cireonapp.server.domain.media.common;
 
+import com.cireonapp.server.ServerApplication;
+import com.cireonapp.server.initializer.AppPath;
+
+import java.io.InputStream;
+import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 
 public class Artwork {
 
@@ -48,5 +55,25 @@ public class Artwork {
 
     public void setPoster(String poster) {
         this.poster = poster;
+    }
+
+    private static boolean imageExists(String hash, String type, String ext) {
+        Path out = AppPath.APP_DIR.resolve("data/content/" + hash + "_" + type + "." + ext);
+        return out.toFile().exists();
+    }
+
+    public static String saveImage(String url, String hash, String type, String ext) {
+        try {
+            Path out = AppPath.APP_DIR.resolve("data/content/" + hash + "_" + type + "." + ext);
+            if (imageExists(hash, type, ext)){
+                ServerApplication.LOGGER.info("Image already exists");
+                return out.getFileName().toString();
+            };
+            InputStream in = new URL(url).openStream();
+            Files.copy(in, out, StandardCopyOption.REPLACE_EXISTING);
+            return out.getFileName().toString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
