@@ -92,5 +92,5 @@ async function signup() {
         return;
     }
 
-    window.location.href = "/login";
+    window.location.href = `/login?username=${username}`;
 }
