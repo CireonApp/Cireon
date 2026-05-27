@@ -8,6 +8,7 @@ import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.initializer.SourceSubscription;
 import com.cireonapp.server.util.DataDirHelper;
 import ch.qos.logback.classic.Level;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -19,6 +20,14 @@ import java.util.Map;
 import java.util.Scanner;
 
 
+@OpenAPIDefinition(
+        info = @io.swagger.v3.oas.annotations.info.Info(
+                title = "Cireon API",
+                version = "1.0",
+                description = "API for Cireon Media Server"
+        )
+)
+
 @SpringBootApplication
 public class ServerApplication {
     private static ConfigurableApplicationContext application;
@@ -26,8 +35,10 @@ public class ServerApplication {
     public static final Logger LOGGER =
             LoggerFactory.getLogger(ServerApplication.class);
 
-    public static void main(String[] args) throws Throwable {
+    public static void main(String[] args) {
         try {
+
+            //why won't it shut up!!!!! even in prod!!
             silenceLogger("nitrite");
             silenceLogger("org.dizitart");
 
