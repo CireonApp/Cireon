@@ -2,30 +2,49 @@ package com.cireonapp.server.domain.session;
 
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.initializer.Databases;
+import com.cireonapp.server.util.EncryptionHelper;
 import com.cireonapp.server.util.TimeHelper;
 import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.filters.Filter;
+import org.dizitart.no2.repository.Cursor;
 
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
 
 import static org.dizitart.no2.filters.FluentFilter.where;
 
 public class SessionManager {
+    private static SecureRandom secureRandom = new SecureRandom();
+
     private static String generateToken() {
-        return UUID.randomUUID().toString();
+        byte[] randomBytes = new byte[16];
+        secureRandom.nextBytes(randomBytes);
+
+        return HexFormat.of().formatHex(randomBytes);
     }
 
+
     public static boolean isValid(String token) {
-        return Databases.sessionRepository.getById(token) != null;
+        Optional<Session> sessionOpt = get(token);
+
+        if (sessionOpt.isEmpty())
+            return false;
+
+
+        if (!UserManager.exists(sessionOpt.get().getUsername()))
+            return false;
+
+        return true;
     }
 
     public static Optional<Session> create(String username, String device) {
         if (!UserManager.exists(username)) return Optional.empty();
-        Session newSession = new Session(generateToken(), username, TimeHelper.getCurrentTimeISO(), device);
+        String token = generateToken();
+        Session newSession = new Session(EncryptionHelper.hashSHA256(token), username, TimeHelper.getCurrentTimeISO(), device);
         WriteResult result = Databases.sessionRepository.insert(newSession);
         if (result.getAffectedCount() > 0) {
+            newSession.setToken(token);// return the actual token and not encrypted one. send to the user later via the api
             return Optional.of(newSession);
         } else {
             return Optional.empty();
@@ -33,6 +52,7 @@ public class SessionManager {
     }
 
     public static boolean delete(String token) {
+        token = EncryptionHelper.hashSHA256(token);
         Session session = Databases.sessionRepository.getById(token);
         if (session == null) return false;
         WriteResult result = Databases.sessionRepository.remove(session);
@@ -40,19 +60,21 @@ public class SessionManager {
     }
 
     public static Optional<Session> get(String token) {
+        token = EncryptionHelper.hashSHA256(token);
         return Optional.ofNullable(Databases.sessionRepository.getById(token));
     }
-    
-    public static boolean deleteAllForUser(String username,String token, boolean deleteCurrent) {
+
+    public static boolean deleteAllForUser(String username, String token, boolean deleteCurrent) {
+        token = EncryptionHelper.hashSHA256(token);
         Filter filter = where("username").eq(username);
-        if(!deleteCurrent){
+        if (!deleteCurrent) {
             filter = Filter.and(filter, where("token").notEq(token));
         }
         WriteResult result = Databases.sessionRepository.remove(filter);
         return result.getAffectedCount() > 0;
     }
 
-    public static Set<Session> getAllForUser(String username) {
-        return Databases.sessionRepository.find(where("username").eq(username)).toSet();
+    public static Cursor<Session> getAllForUser(String username) {
+        return Databases.sessionRepository.find(where("username").eq(username));
     }
 }
