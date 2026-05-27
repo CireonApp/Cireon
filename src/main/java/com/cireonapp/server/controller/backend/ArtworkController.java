@@ -5,29 +5,59 @@ import com.cireonapp.server.domain.media.common.Artwork;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.domain.media.source.SourceType;
+import com.cireonapp.server.domain.user.User;
+import com.cireonapp.server.dto.CommonResponseDto;
+import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.initializer.AppPath;
 import com.cireonapp.server.service.ContentService;
+import com.cireonapp.server.util.CookieHelper;
 import com.cireonapp.server.util.GuessMediaType;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
 import java.io.FileNotFoundException;
 import java.util.Optional;
 
+@Tag(name = "Artwork API", description = "Endpoints for fetching media artwork. Requires authentication.")
 @RestController
 public class ArtworkController {
     private static final String APP_ICON_RESOURCE = "static/assets/icons/cireon_nobackground.svg";
 
+    private enum ArtworkType {
+        background,
+        poster,
+        logo;
+    }
+
     @Autowired
     private ContentService service;
 
+
+    @Operation(
+            summary = "Fetch media artwork.",
+            description = "Fetch media artwork. Requires authentication. Returns the requested artwork as a byte stream."
+    )
     @GetMapping(value = "/api/artwork", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
-    public Mono<Resource> getVideo(@RequestParam(value = "type") String type, @RequestParam(value = "id") String id) {
+    public Mono<Resource> getVideo(@RequestParam(value = "type") ArtworkType type, @RequestParam(value = "id") String id, HttpServletRequest request) {
+        Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
+
+        if (user.isEmpty()) {
+            return Mono.error(new IllegalArgumentException(CommonResponseDto.Error.NOT_LOGGED_IN.errorMessage));
+        }
+
+        //TODO add readContent permission check
+
+
         ServerApplication.LOGGER.info("test");
-        Artwork artwork = null;
+        Artwork artwork;
         String imagePath = "";
 
         SourceType sourceType = GuessMediaType.guess(id);
@@ -48,21 +78,21 @@ public class ArtworkController {
         }
 
         switch (type) {
-            case "background":
+            case background:
                 String background = artwork.getBackground();
                 if (background == null || background.isBlank()) {
                     return service.getClasspathContent(APP_ICON_RESOURCE);
                 }
                 imagePath = AppPath.APP_DIR.resolve("data/content").resolve(background).toString();
                 break;
-            case "poster":
+            case poster:
                 String poster = artwork.getPoster();
                 if (poster == null || poster.isBlank()) {
                     return service.getClasspathContent(APP_ICON_RESOURCE);
                 }
                 imagePath = AppPath.APP_DIR.resolve("data/content").resolve(poster).toString();
                 break;
-            case "logo":
+            case logo:
                 String logo = artwork.getLogo();
                 if (logo == null || logo.isBlank()) {
                     return service.getClasspathContent(APP_ICON_RESOURCE);
@@ -77,5 +107,12 @@ public class ArtworkController {
 
         return service.getContent(imagePath)
                 .onErrorResume(FileNotFoundException.class, error -> service.getClasspathContent(APP_ICON_RESOURCE));
+    }
+
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
+        return ResponseEntity.status(401).body(new ErrorResponseDto(ex.getMessage()));
     }
 }
