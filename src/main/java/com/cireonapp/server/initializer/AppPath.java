@@ -9,10 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class AppPath {
-
     public static final Path APP_DIR = init();
-
-    private AppPath() {}
 
     private static Path init() {
         String override = System.getProperty("app.dir");
@@ -34,12 +31,19 @@ public class AppPath {
         }
 
         path = path.toAbsolutePath().normalize();
-
         try {
             Files.createDirectories(path);
+
+            Path probeFile = Files.createTempFile(path, ".rw-check-", ".tmp");
+            try {
+                Files.writeString(probeFile, "probe");
+                Files.readString(probeFile);
+            } finally {
+                Files.deleteIfExists(probeFile);
+            }
         } catch (IOException e) {
             throw new RuntimeException(
-                    "Failed to create app directory: " + path,
+                    "App directory is not readable/writable: " + path,
                     e
             );
         }
