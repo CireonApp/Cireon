@@ -5,10 +5,8 @@ import com.cireonapp.server.domain.media.common.CommonMetadata;
 import com.cireonapp.server.domain.media.common.Genres;
 import org.dizitart.no2.index.IndexType;
 import org.dizitart.no2.repository.annotations.Entity;
-import org.dizitart.no2.repository.annotations.Id;
 import org.dizitart.no2.repository.annotations.Index;
 
-import java.util.HashSet;
 import java.util.Set;
 
 

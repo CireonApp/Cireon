@@ -6,7 +6,6 @@ import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.filters.Filter;
 import org.dizitart.no2.repository.Cursor;
 
-import java.util.Set;
 import java.util.UUID;
 
 import static org.dizitart.no2.filters.FluentFilter.where;

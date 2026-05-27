@@ -20,7 +20,7 @@ public class UserManager {
     /**
      * Creates a new user. If there are no users in the database, the first user will be set to administrator.
      *
-     * @param user
+     * @param user the user to create
      * @return true if the user was created successfully, false otherwise.
      */
     public static boolean create(User user) throws UniqueConstraintException {
