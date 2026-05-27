@@ -13,19 +13,21 @@ import org.apache.commons.io.FilenameUtils;
 import org.dizitart.no2.collection.FindOptions;
 import org.dizitart.no2.filters.Filter;
 import org.dizitart.no2.common.SortOrder;
+import org.dizitart.no2.repository.Cursor;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -37,16 +39,33 @@ public class MovieManager {
 
 
     public static List<SearchResults<Movie>> search(String query, int limit) {
-        if (query == null || query.isBlank()) return new ArrayList<>();
-        return getAll().stream()
-                .map(movie -> new SearchResults<>(
-                        movie,
-                        FuzzySearch.weightedRatio(query.toLowerCase(), movie.getMetadata().getTitle().toLowerCase())
-                ))
-                .filter(result -> result.score() > 70)
-                .sorted((a, b) -> Integer.compare(b.score(), a.score()))
-                .limit(Math.max(limit, 0))
-                .toList();
+        if (query == null || query.isBlank() || limit <= 0) return List.of();
+
+        String normalizedQuery = query.toLowerCase(Locale.ROOT);
+        PriorityQueue<SearchResults<Movie>> topMatches = new PriorityQueue<>(
+                limit,
+                Comparator.comparingInt(SearchResults::score)
+        );
+
+        for (Movie movie : getAll()) {
+            String title = movie.getMetadata() != null ? movie.getMetadata().getTitle() : null;
+            if (title == null || title.isBlank()) continue;
+
+            int score = FuzzySearch.weightedRatio(normalizedQuery, title.toLowerCase(Locale.ROOT));
+            if (score <= 70) continue;
+
+            SearchResults<Movie> result = new SearchResults<>(movie, score);
+            if (topMatches.size() < limit) {
+                topMatches.offer(result);
+            } else if (score > topMatches.peek().score()) {
+                topMatches.poll();
+                topMatches.offer(result);
+            }
+        }
+
+        List<SearchResults<Movie>> results = new ArrayList<>(topMatches);
+        results.sort((a, b) -> Integer.compare(b.score(), a.score()));
+        return results;
     }
 
     public static List<Movie> getByCreationDate(SortOrder order, int limit) {
@@ -62,8 +81,8 @@ public class MovieManager {
         return Optional.ofNullable(Databases.movieRepository.getById(id));
     }
 
-    public static Set<Movie> getAll() {
-        return Databases.movieRepository.find(Filter.ALL).toSet();
+    public static Cursor<Movie> getAll() {
+        return Databases.movieRepository.find(Filter.ALL);
     }
 
     private static final Set<String> SUPPORTED_FORMATS = Set.of(
