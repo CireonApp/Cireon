@@ -4,6 +4,7 @@ import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.initializer.FileWatcher;
 import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.filters.Filter;
+import org.dizitart.no2.repository.Cursor;
 
 import java.util.Set;
 import java.util.UUID;
@@ -11,19 +12,19 @@ import java.util.UUID;
 import static org.dizitart.no2.filters.FluentFilter.where;
 
 public class SourceManager {
-    public static Set<Source> getAll(boolean onlyEnabled, boolean onlyWatchForChanges) {
+    public static Cursor<Source> getAll(boolean onlyEnabled, boolean onlyWatchForChanges) {
         Filter enabledFilter = where("enabled").eq(onlyEnabled);
         Filter watchForChangesFilter = where("watchForChanges").eq(onlyWatchForChanges);
 
         if (onlyEnabled && onlyWatchForChanges) {
-            return Databases.sourceRepository.find(Filter.and(enabledFilter, watchForChangesFilter)).toSet();
+            return Databases.sourceRepository.find(Filter.and(enabledFilter, watchForChangesFilter));
         } else if (onlyEnabled) {
-            return Databases.sourceRepository.find(enabledFilter).toSet();
+            return Databases.sourceRepository.find(enabledFilter);
         } else if (onlyWatchForChanges) {
-            return Databases.sourceRepository.find(watchForChangesFilter).toSet();
+            return Databases.sourceRepository.find(watchForChangesFilter);
         }
 
-        return Databases.sourceRepository.find(Filter.ALL).toSet();
+        return Databases.sourceRepository.find(Filter.ALL);
     }
 
     public static boolean create(Source source) {
