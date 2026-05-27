@@ -24,7 +24,7 @@ public class LoginController {
 
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
 
-        if (user.isEmpty()) {
+        if (user.isPresent()) {
             return "redirect:/";
         }
 

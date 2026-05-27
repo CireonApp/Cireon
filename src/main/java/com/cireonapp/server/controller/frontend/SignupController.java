@@ -16,8 +16,8 @@ public class SignupController {
     String signup(Model model, HttpServletRequest request) {
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
 
-        if (user.isEmpty()) {
-            return "redirect:/login";
+        if (user.isPresent()) {
+            return "redirect:/";
         }
 
 
