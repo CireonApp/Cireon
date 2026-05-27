@@ -7,12 +7,15 @@ import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.*;
 import com.cireonapp.server.util.CookieHelper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -20,49 +23,60 @@ import java.util.Optional;
 
 import static com.cireonapp.server.controller.backend.AuthenticationController.AUTH_COOKIE_NAME;
 
+
+@Tag(name = "Session API", description = "Session related endpoints. Requires authentication.")
 @RestController
 @RequestMapping("/api/auth/session")
 public class SessionController {
+
+    @Operation(
+            summary = "Check current session.",
+            description = "Check current user session. User needs to be authenticated to use this endpoint"
+    )
     @GetMapping("/check")
     public ResponseEntity<?> checkSession(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
+        Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 
-        if (cookies == null)
+        if (authCookie.isEmpty())
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.NOT_LOGGED_IN);
 
-        for (Cookie cookie : cookies) {
-            if (!cookie.getName().equals(AUTH_COOKIE_NAME)) continue;
-            Optional<Session> session = SessionManager.get(cookie.getValue());
-            if (session.isPresent()) {
-                String username = session.get().getUsername();
-                if (username == null || username.isBlank()) {
-                    SessionManager.delete(session.get().getToken());
-                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(CommonResponseDto.Error.NOT_LOGGED_IN);
-                }
+        Optional<Session> session = SessionManager.get(authCookie.get().getValue());
 
-                Optional<User> user = UserManager.get(username);
-                if (user.isEmpty()) {
-                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .body(CommonResponseDto.Error.INTERNAL_SERVER_ERROR);
-                }
-                return ResponseEntity.status(HttpStatus.OK)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .body(new CheckSessionResponseDto(user.get().getUsername(), user.get().getDisplayName(), user.get().getPermissions(),user.get().getSettings()));
-                        //TODO: maybe for future just pass the user and handle the Dto in the class itself...
-            }
+        if (session.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(CommonResponseDto.Error.NOT_LOGGED_IN);
+
+        String username = session.get().getUsername();
+        if (username == null || username.isBlank()) {
+            SessionManager.delete(session.get().getToken());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(CommonResponseDto.Error.NOT_LOGGED_IN);
         }
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+
+        Optional<User> user = UserManager.get(username);
+        if (user.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(CommonResponseDto.Error.NOT_LOGGED_IN);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(CommonResponseDto.Error.NOT_LOGGED_IN);
+                .body(new CheckSessionResponseDto(user.get().getUsername(), user.get().getDisplayName(), user.get().getPermissions(), user.get().getSettings()));
+        //TODO: maybe for future just pass the user and handle the Dto in the class itself...
     }
 
-    @PostMapping("/revoke")
-    public static ResponseEntity<?> revokeSession(HttpServletRequest request, @RequestParam(value = "token", required = false) String tokenToRevoke) {
+    @Operation(
+            summary = "Revoke any session.",
+            description = "Revoke any session. User needs to be authenticated to use this endpoint. You can only revoke your own sessions or if you have the right permissions, you can revoke any session.  If you want to revoke own session without session id, you may use the logout method"
+
+    )
+    @DeleteMapping("/revoke")
+    public static ResponseEntity<?> revokeSession(HttpServletRequest request, @RequestParam(value = "token") String tokenToRevoke) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 
         if (authCookie.isEmpty()) {
@@ -79,7 +93,7 @@ public class SessionController {
                     .body(CommonResponseDto.Error.NOT_LOGGED_IN);
         }
 
-        if(tokenToRevoke == null || tokenToRevoke.isBlank()) {
+        if (tokenToRevoke == null || tokenToRevoke.isBlank()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.MISSING_PARAMETERS);
@@ -114,25 +128,33 @@ public class SessionController {
                     .body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
         }
 
-        SessionManager.delete(sessionToRevoke.get().getToken());
+        SessionManager.delete(tokenToRevoke);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new SuccessResponseDto("Session revoked successfully!"));
     }
 
-    @PostMapping("/revokeAll")
-    public ResponseEntity<?> revokeAllSessions(HttpServletRequest request, HttpServletResponse response, @RequestParam(value = "current", defaultValue = "false") String revokeCurrent) {
-        boolean revokeCurrentSession = Objects.equals(revokeCurrent, "true");
+    @Operation(
+            summary = "Revoke all sessions of a user.",
+            description = "Revoke all sessions of a user. User needs to be authenticated to use this endpoint. You may choose if you want to revoke the current session or not. If you choose to revoke the current session, the user will be logged out."
+    )
+    @DeleteMapping("/revokeAll")
+    public ResponseEntity<?> revokeAllSessions(HttpServletRequest request, HttpServletResponse response, @RequestParam(value = "current") Boolean revokeCurrent) {
+        boolean revokeCurrentSession = revokeCurrent;
         Optional<Cookie> cookie = CookieHelper.getAuthCookie(request);
         if (cookie.isEmpty()) {
+            Cookie newCookie = new Cookie(AUTH_COOKIE_NAME, "");
+            newCookie.setMaxAge(0); // 1 Year
+            newCookie.setPath("/");
+            response.addCookie(newCookie);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.NOT_LOGGED_IN);
         }
         Optional<Session> session = SessionManager.get(cookie.get().getValue());
         if (session.isPresent()) {
-            SessionManager.deleteAllForUser(session.get().getUsername(), session.get().getToken(), revokeCurrentSession);
+            SessionManager.deleteAllForUser(session.get().getUsername(),cookie.get().getValue(), revokeCurrentSession);
             if (revokeCurrentSession) {
                 cookie.get().setValue("");
                 cookie.get().setMaxAge(0);
@@ -146,5 +168,13 @@ public class SessionController {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(CommonResponseDto.Error.NOT_LOGGED_IN);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ResponseEntity<?> handleArrayIndexOutOfBoundsException() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponseDto("You are missing a request parameter!"));
     }
 }
