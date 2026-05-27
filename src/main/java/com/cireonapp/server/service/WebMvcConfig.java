@@ -16,5 +16,11 @@ public class WebMvcConfig implements WebMvcConfigurer {
                 .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS)
                         .cachePublic()
                         .immutable());
+
+        registry.addResourceHandler("/assets/favicon/**")
+                .addResourceLocations("classpath:/static/assets/favicon/")
+                .setCacheControl(CacheControl.maxAge(365, TimeUnit.DAYS)
+                        .cachePublic()
+                        .immutable());
     }
 }
