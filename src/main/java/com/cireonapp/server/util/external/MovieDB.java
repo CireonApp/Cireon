@@ -36,12 +36,6 @@ public class MovieDB {
         return tmdbApi.getMovies().getDetails(movieId, language, MovieAppendToResponse.IMAGES,MovieAppendToResponse.ALTERNATIVE_TITLES);
     }
 
-//    public static Images getArtwork(String apiKey, int movieId, String language) throws TmdbException {
-//        TmdbApi tmdbApi = new TmdbApi(apiKey);
-//        return tmdbApi.getMovies().getImages(movieId, " ", language, "en-US", "null");
-//
-//    }
-
     public static String saveImageSafe(String path, int id, String type) {
         try {
             String ext = path.substring(path.lastIndexOf('.') + 1);
@@ -115,6 +109,7 @@ public class MovieDB {
                 language
         );
 
+
         metadata.setTagline(details.getTagline());
         metadata.setRuntime(details.getRuntime());
 
@@ -140,13 +135,10 @@ public class MovieDB {
     }
 
     public static long convertToTimestamp(String dateStr) {
-        // 1. Define the input pattern
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
-        // 2. Parse the string into a LocalDate object
         LocalDate date = LocalDate.parse(dateStr, formatter);
 
-        // 3. Convert to timestamp at the start of that day (using System Default TimeZone)
         return date.atStartOfDay(ZoneId.systemDefault())
                 .toInstant()
                 .toEpochMilli();
