@@ -10,10 +10,14 @@ async function login() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
 
-    const auth = btoa(`${username}:${password}`);
 
     const url = '/api/auth/login';
-    const options = {method: 'POST', headers: {authorization: `Basic ${auth}`}};
+    const options = {
+        method: 'POST',
+        headers: {'content-type': 'application/json'},
+        body: `{"password":"${password}","username":"${username}"}`
+    };
+    // const options = {method: 'POST', headers: {authorization: `Basic ${auth}`}};
 
     const response = await fetch(url, options);
     const json = await response.json();

@@ -8,56 +8,44 @@ import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.dto.*;
 import com.cireonapp.server.util.CookieHelper;
 import com.cireonapp.server.util.EncryptionHelper;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Base64;
 import java.util.Optional;
 
+
+@Tag(name = "Authentication API", description = "Authentication related endpoints")
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthenticationController {
     public static final String AUTH_COOKIE_NAME = "SessionToken";
 
+    @Operation(
+            summary = "Login with username and password.",
+            description = "Login with username and password. If successful, returns a session cookie. If already logged in, returns an error. If username or password is incorrect, returns an error."
+    )
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestHeader("Authorization") String authHeader, HttpServletResponse response, HttpServletRequest request) {
-        Optional<Cookie> cookie = CookieHelper.getAuthCookie(request);
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDto userCred, HttpServletResponse response, HttpServletRequest request) {
+        Optional<User> userFromSession = CookieHelper.getUserFromSessionCookie(request);
 
-        if (cookie.isPresent() && SessionManager.isValid(cookie.get().getValue()))
+        if (userFromSession.isPresent())
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(new ErrorResponseDto("Already logged in! please log out first."));
 
-        if (!authHeader.startsWith("Basic ")) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(new ErrorResponseDto("Invalid Authorization format."));
-        }
-        String encodedCreds = authHeader.split(" ")[1];
 
-        String decoded;
-        try {
-            decoded = new String(Base64.getDecoder().decode(encodedCreds));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new ErrorResponseDto("Invalid Base64 encoding in Authorization header!"));
-        }
-        int separator = decoded.indexOf(":");
-        if (separator == -1) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new ErrorResponseDto("Invalid Authorization format. Expected 'username:password' after Base64 decoding."));
-        }
-
-        String username = decoded.substring(0, separator);
-        String password = decoded.substring(separator + 1);
+        String username = userCred.username;
+        String password = userCred.password;
 
         if (username.trim().isEmpty() || password.trim().isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
@@ -104,6 +92,10 @@ public class AuthenticationController {
                 .body(new LoginResponseDto(user.get().getDisplayName(), user.get().getPermissions()));
     }
 
+    @Operation(
+            summary = "Logout current user..",
+            description = "If user is logged in, will log out the user by deleting the session and clearing the cookie. If no valid session is found, returns an error."
+    )
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
