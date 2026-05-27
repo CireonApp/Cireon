@@ -1,12 +1,16 @@
 package com.cireonapp.server.domain.user;
 
+import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.util.EncryptionHelper;
 import com.cireonapp.server.util.WebThemes;
 import jakarta.annotation.Nullable;
 import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.exceptions.UniqueConstraintException;
+import org.dizitart.no2.filters.Filter;
+import org.dizitart.no2.repository.Cursor;
 
+import java.awt.*;
 import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Optional;
@@ -19,7 +23,7 @@ public class UserManager {
      * @param user
      * @return true if the user was created successfully, false otherwise.
      */
-    public static boolean create(User user) {
+    public static boolean create(User user) throws UniqueConstraintException {
         if (user == null || user.getUsername() == null || user.getUsername().isBlank()) {
             return false;
         }
@@ -104,6 +108,7 @@ public class UserManager {
      */
     public static boolean delete(User user) {
         WriteResult result = Databases.userRepository.remove(user);
+        SessionManager.deleteAllForUser(user.getUsername(),null,true);
         return result.getAffectedCount() > 0;
     }
 
@@ -116,7 +121,6 @@ public class UserManager {
     public static boolean delete(String username) {
         Optional<User> user = get(username);
         if (user.isEmpty()) return false;
-
         return delete(user.get());
     }
 
@@ -139,8 +143,8 @@ public class UserManager {
      * @return Returns a set of all users in the database.
      * @warning: This method should be used with caution, as it can potentially return a large number of users if the database is large.
      */
-    public static Set<User> getAll() {
-        return Databases.userRepository.find().toSet();
+    public static Cursor<User> getAll() {
+        return Databases.userRepository.find(Filter.ALL);
     }
 
     public static int getCount() {
