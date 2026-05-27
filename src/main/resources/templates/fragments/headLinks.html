@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+
+<th:block th:fragment="headLinks">
+    <link rel="icon" type="image/png" th:href="@{/assets/favicon/favicon-96x96.png}" sizes="96x96"/>
+    <link rel="icon" type="image/svg+xml" th:href="@{/assets/favicon/favicon.svg}"/>
+    <link rel="shortcut icon" th:href="@{/assets/favicon/favicon.ico}"/>
+    <link rel="apple-touch-icon" sizes="180x180" th:href="@{/assets/favicon/apple-touch-icon.png}"/>
+    <meta name="apple-mobile-web-app-title" content="Cireon"/>
+    <link rel="manifest" th:href="@{/assets/favicon/site.webmanifest}"/>
+</th:block>
+
+</body>
+</html>
