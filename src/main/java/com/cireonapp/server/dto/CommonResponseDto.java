@@ -11,5 +11,6 @@ public class CommonResponseDto {
         public static final ErrorResponseDto INTERNAL_SERVER_ERROR = new ErrorResponseDto("An error occurred while processing your request! Please check the console for more details.");
         public static final ErrorResponseDto MISSING_PARAMETERS = new ErrorResponseDto("Missing required parameters!");
         public static final ErrorResponseDto CONTENT_NOT_FOUND = new ErrorResponseDto("The requested content was not found!");
+        public static final ErrorResponseDto USER_NOT_FOUND = new ErrorResponseDto("The requested user was not found!");
     }
 }
