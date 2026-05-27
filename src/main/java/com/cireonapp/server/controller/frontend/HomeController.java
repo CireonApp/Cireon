@@ -12,29 +12,24 @@ import com.cireonapp.server.util.CookieHelper;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.dizitart.no2.common.SortOrder;
+import org.dizitart.no2.repository.Cursor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
+import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.List;
 
 @Controller
 public class HomeController {
     @GetMapping("/")
     String home(Model model, HttpServletRequest request) {
-        Optional<Cookie> cookie = CookieHelper.getAuthCookie(request);
-        if (cookie.isEmpty()) {
-            return "redirect:/login";
-        }
+        Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
 
-        Optional<Session> session = SessionManager.get(cookie.get().getValue());
-        if (session.isEmpty()) {
-            return "redirect:/login";
-        }
-
-        Optional<User> user = UserManager.get(session.get().getUsername());
         if (user.isEmpty()) {
             return "redirect:/login";
         }
@@ -50,6 +45,8 @@ public class HomeController {
         model.addAttribute("carousels", carousels);
 
         model.addAttribute("user", user.get());
+
+        model.addAttribute("theme", UserManager.getThemeLabel(user.get()).label);
         return "home/index";
     }
 
@@ -72,7 +69,7 @@ public class HomeController {
         carousel.setSourceType(SourceType.MOVIE);
         List<Movie> movies = MovieManager.getByReleaseDate(SortOrder.Descending, 15);
         for (Movie movie : movies) {
-            if(carousel.getPosters().size() >= 15) break;
+            if (carousel.getPosters().size() >= 15) break;
             carousel.addPoster(CarouselPoster.createCarouselPosterFromMovie(movie));
         }
         return carousel;
@@ -80,42 +77,46 @@ public class HomeController {
 
 
     private Billboard billboardHandler(User user) {
-
-
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH");
-        String formattedTime = now.format(formatter);
-
-        long seed = user.getUsername().hashCode() + formattedTime.hashCode();
-
-        Random random = new Random(seed);
-        Set<Movie> allMovies = MovieManager.getAll();
-        if (allMovies.isEmpty()) {
-            return null;
+        Optional<Movie> movieBillboard = pickRandomMovieForUser(user);
+        if (movieBillboard.isEmpty()) {
+            return null; // or better: return Optional<Billboard> from billboardHandler
         }
-        int randomNumber = random.nextInt(allMovies.size());
-        Optional<Movie> movieBillboard = allMovies.stream()
-                .skip(randomNumber)
-                .findFirst();
-
+        Movie movie = movieBillboard.get();
 
         Billboard billboard = new Billboard();
+        billboard.id = movie.getHash();
+        billboard.sourceType = "movie";
+        billboard.name = movie.getMetadata().getTitle();
+        billboard.isAdult = movie.getMetadata().isAdult();
+        billboard.releaseDate = movie.getMetadata().getReleaseDate();
+        billboard.genres = Genres.GenresToStringArray(movie.getMetadata().getGenres());
+        billboard.runtime = movie.getMetadata().getRuntime();
+        billboard.artwork = movie.getMetadata().getArtworks();
+        return billboard;
 
+    }
 
-        if (movieBillboard.isPresent()) {
-            Movie movie = movieBillboard.get();
-            billboard.id = movie.getHash();
-            billboard.sourceType = "movie";
-            billboard.name = movie.getMetadata().getTitle();
-            billboard.isAdult = movie.getMetadata().isAdult();
-            billboard.releaseDate = movie.getMetadata().getReleaseDate();
-            billboard.genres = Genres.GenresToStringArray(movie.getMetadata().getGenres());
-            billboard.runtime = movie.getMetadata().getRuntime();
-            billboard.artwork = movie.getMetadata().getArtworks();
-            return billboard;
+    private Optional<Movie> pickRandomMovieForUser(User user) {
+        long seed = Objects.hash(
+                user.getUsername(),
+                LocalDateTime.now().truncatedTo(ChronoUnit.HOURS)
+        );
+
+        SplittableRandom rng = new SplittableRandom(seed);
+        Cursor<Movie> movies = MovieManager.getAll();
+
+        Movie chosen = null;
+        long seen = 0;
+
+        for (Movie movie : movies) {
+            seen++;
+            // Replace current choice with probability 1/seen
+            if (rng.nextLong(seen) == 0) {
+                chosen = movie;
+            }
         }
 
-        return null;
+        return Optional.ofNullable(chosen);
     }
 
 }
