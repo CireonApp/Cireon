@@ -5,6 +5,8 @@ import com.cireonapp.server.domain.media.source.SourceManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.CommonResponseDto;
+import com.cireonapp.server.dto.ErrorResponseDto;
+import com.cireonapp.server.dto.SourceResponseDto;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -141,16 +143,14 @@ public class SourceController {
     private static Optional<ResponseEntity<?>> hasPermission(HttpServletRequest request) {
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
         if (user.isEmpty())
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
+            return Optional.of(ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN));
 
         boolean isAdmin = user.get().getPermissions().contains(UserPermissions.ADMINISTRATOR);
         boolean canManageContent = user.get().getPermissions().contains(UserPermissions.CONTENT_MANAGE);
 
         if (!isAdmin && !canManageContent)
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
+            return Optional.of(ResponseEntity.status(HttpStatus.FORBIDDEN).body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS));
 
-        Cursor<Source> sources = SourceManager.getAll(onlyEnabled, onlyWatchForChanges);
-
-        return ResponseEntity.ok(sources.toSet());
+        return Optional.empty();
     }
 }
