@@ -6,6 +6,7 @@ import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.filters.Filter;
 import org.dizitart.no2.repository.Cursor;
 
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.dizitart.no2.filters.FluentFilter.where;
@@ -30,10 +31,15 @@ public class SourceManager {
         source.setId(UUID.randomUUID().toString()); //Force a random ID
         WriteResult result = Databases.sourceRepository.insert(source);
 
-        if(source.isWatchForChanges()){
+        if (source.isWatchForChanges()) {
             FileWatcher.registerSource(source);
         }
 
         return result.getAffectedCount() > 0;
+    }
+
+    public static Optional<Source> get(String id) {
+        Source source = Databases.sourceRepository.getById(id);
+        return Optional.ofNullable(source);
     }
 }
