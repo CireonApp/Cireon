@@ -13,9 +13,8 @@ public class DocsController {
         return "forward:/api/docs/swagger-ui/index.html";
     }
 
-    @GetMapping("/api/{asset:swagger-ui\\.css|swagger-ui-bundle\\.js|swagger-ui-standalone-preset\\.js|swagger-initializer\\.js|index\\.css}")
+    @GetMapping("/api/{asset:swagger-ui\\.css|swagger-ui-bundle\\.js|swagger-ui-standalone-preset\\.js|swagger-initializer\\.js|index\\.css|favicon-32x32\\.png|favicon-16x16\\.png}")
     public String redirectSwaggerAsset(@PathVariable String asset) {
         return "forward:/api/docs/swagger-ui/" + asset;
     }
-
 }
