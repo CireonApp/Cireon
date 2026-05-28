@@ -21,7 +21,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -90,25 +89,16 @@ public class AuthenticationController {
                     .body(new ErrorResponseDto("Already logged in! please log out first."));
 
 
-        String username = userCred.username;
-        String password = userCred.password;
-
-        if (username.trim().isEmpty() || password.trim().isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new ErrorResponseDto("Username or password cannot be empty!"));
-        }
-
-        Optional<User> user = UserManager.get(username);
+        Optional<User> user = UserManager.get(userCred.username);
 
         if (user.isEmpty()) {
-            EncryptionHelper.encryptPassword_argon2(password);
+            EncryptionHelper.encryptPassword_argon2(userCred.password);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.INCORRECT_USERNAME_PASSWORD);
         }
 
-        boolean successful = Authentication.authenticateExistingUser(user.get(), password);
+        boolean successful = Authentication.authenticateExistingUser(user.get(), userCred.password);
 
         if (!successful) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -168,8 +158,8 @@ public class AuthenticationController {
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 
-        if(authCookie.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        if (authCookie.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.NOT_LOGGED_IN);
         }
@@ -182,29 +172,12 @@ public class AuthenticationController {
         cookie.setPath("/");
         response.addCookie(cookie);
         if (!validSession) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.NOT_LOGGED_IN);
         }
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new SuccessResponseDto("Logged out successfully!"));
-    }
-
-
-    @ExceptionHandler(MissingRequestHeaderException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<?> handleMissingRequestHeaderException() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponseDto("Missing Authorization header!"));
-    }
-
-    @ExceptionHandler(ArrayIndexOutOfBoundsException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<?> handleArrayIndexOutOfBoundsException() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponseDto("Username or password is empty!"));
     }
 }
