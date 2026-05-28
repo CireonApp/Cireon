@@ -51,4 +51,12 @@ public class Movie extends CommonMedia {
     public void setMetadata(MovieMetadata metadata) {
         this.metadata = metadata;
     }
+
+    public MovieMetadata getOverrides() {
+        return overrides;
+    }
+
+    public void setOverrides(MovieMetadata overrides) {
+        this.overrides = overrides;
+    }
 }
