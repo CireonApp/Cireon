@@ -5,7 +5,10 @@ import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.domain.user.UserPermissions;
-import com.cireonapp.server.dto.*;
+import com.cireonapp.server.dto.CheckSessionResponseDto;
+import com.cireonapp.server.dto.CommonResponseDto;
+import com.cireonapp.server.dto.ErrorResponseDto;
+import com.cireonapp.server.dto.SuccessResponseDto;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -77,7 +80,7 @@ public class SessionController {
 
         String username = session.get().getUsername();
         if (username == null || username.isBlank()) {
-            SessionManager.delete(session.get().getToken());
+            SessionManager.delete(authCookie.get().getValue());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.NOT_LOGGED_IN);
