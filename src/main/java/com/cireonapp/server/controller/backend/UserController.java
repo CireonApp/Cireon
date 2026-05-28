@@ -92,7 +92,7 @@ public class UserController {
 
         if (!isAdmin && !canManageUsers)
             if (userCount >= maxUsers) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorResponseDto("Maximum number of users reached."));
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponseDto("Maximum number of users reached."));
             }
 
         User newUser = new User(user.username, user.password, user.displayName);
@@ -178,8 +178,8 @@ public class UserController {
     )
     public ResponseEntity<?> delete(@RequestParam(value = "username", required = false) String username, HttpServletRequest request) {
 
-        Optional<Cookie> cookie = CookieHelper.getAuthCookie(request);
-        if (cookie.isEmpty()) {
+        Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
+        if (user.isEmpty())
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
 
 
@@ -196,9 +196,11 @@ public class UserController {
         }
 
         Set<UserPermissions> permissions = user.get().getPermissions();
-        if (permissions.contains(UserPermissions.ADMINISTRATOR) ||
-                permissions.contains(UserPermissions.USER_MANAGE)
-        ) {
+
+        boolean isAdmin = permissions.contains(UserPermissions.ADMINISTRATOR);
+        boolean canManageUsers = permissions.contains(UserPermissions.USER_MANAGE);
+
+        if (isAdmin || canManageUsers) {
             boolean deleteReq = UserManager.delete(username);
             if (deleteReq)
                 return ResponseEntity.ok(new SuccessResponseDto("User deleted successfully"));
@@ -206,6 +208,20 @@ public class UserController {
         }
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
+    }
 
+    @ExceptionHandler(UniqueConstraintException.class)
+    public ResponseEntity<?> handleUniqueConstraintExceptions() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.USERNAME_ALREADY_EXISTS);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<?> handleMessageNotReadableExceptions() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.JSON_PARSING_ERROR);
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<?> handleMediaTypeNotSupportedExceptions() {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.INVALID_JSON_BODY);
     }
 }
