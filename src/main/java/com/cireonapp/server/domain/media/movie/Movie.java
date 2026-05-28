@@ -1,13 +1,13 @@
 package com.cireonapp.server.domain.media.movie;
 
+import com.cireonapp.server.domain.media.common.CommonMedia;
+import com.cireonapp.server.domain.media.source.SourceType;
 import org.dizitart.no2.repository.annotations.Id;
 
 import java.nio.file.Path;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 
 
-public class Movie {
+public class Movie extends CommonMedia {
     /**
      * First and last 4mb of a file + file size.
      */
@@ -15,21 +15,17 @@ public class Movie {
     private String hash;
     private Path filePath;
     private MovieMetadata metadata;
-    private long lastUpdated;
     private MovieMetadata overrides;
-    private long created;
 
     public Movie(String hash, Path filePath, MovieMetadata metadata) {
+        super(SourceType.MOVIE);
         this.hash = hash;
         this.filePath = filePath;
         this.metadata = metadata;
-        lastUpdated = Timestamp.valueOf(LocalDateTime.now()).getTime();
-        created = Timestamp.valueOf(LocalDateTime.now()).getTime();
     }
 
     public Movie(){
-        lastUpdated = Timestamp.valueOf(LocalDateTime.now()).getTime();
-        created = Timestamp.valueOf(LocalDateTime.now()).getTime();
+        super(SourceType.MOVIE);
     }
 
     public String getHash() {
@@ -54,22 +50,5 @@ public class Movie {
 
     public void setMetadata(MovieMetadata metadata) {
         this.metadata = metadata;
-    }
-
-
-    public long getLastUpdated() {
-        return lastUpdated;
-    }
-
-    public void setLastUpdated() {
-        this.lastUpdated = Timestamp.valueOf(LocalDateTime.now()).getTime();
-    }
-
-    public long getCreated() {
-        return created;
-    }
-
-    public void setCreated(long created) {
-        this.created = created;
     }
 }
