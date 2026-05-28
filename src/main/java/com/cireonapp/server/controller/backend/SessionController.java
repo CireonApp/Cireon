@@ -8,6 +8,10 @@ import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.*;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +38,28 @@ public class SessionController {
             description = "Check current user session. User needs to be authenticated to use this endpoint"
     )
     @GetMapping("/check")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved the current session.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = CheckSessionResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - User is not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            )
+    })
     public ResponseEntity<?> checkSession(HttpServletRequest request) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 
@@ -76,6 +102,58 @@ public class SessionController {
 
     )
     @DeleteMapping("/revoke")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully revoked the session.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = SuccessResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - User is not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Bad Request - Missing or invalid parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have sufficient permissions",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+    })
     public static ResponseEntity<?> revokeSession(HttpServletRequest request, @RequestParam(value = "token") String tokenToRevoke) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 
@@ -140,6 +218,48 @@ public class SessionController {
             description = "Revoke all sessions of a user. User needs to be authenticated to use this endpoint. You may choose if you want to revoke the current session or not. If you choose to revoke the current session, the user will be logged out."
     )
     @DeleteMapping("/revokeAll")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully revoked all sessions.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = SuccessResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - User is not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Bad Request - Missing or invalid parameters",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+    })
     public ResponseEntity<?> revokeAllSessions(HttpServletRequest request, HttpServletResponse response, @RequestParam(value = "current") Boolean revokeCurrent) {
         boolean revokeCurrentSession = revokeCurrent;
         Optional<Cookie> cookie = CookieHelper.getAuthCookie(request);

@@ -1,14 +1,16 @@
 package com.cireonapp.server.domain.config;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.dizitart.no2.repository.annotations.Entity;
-import org.dizitart.no2.repository.annotations.Id;
 
-import java.util.Date;
 
 
 @Entity(value = "config")
+@Schema(hidden = true)
 public class Config {
+    @Schema(defaultValue = "50262", description = "The port the server is listening to")
     private int port = 50262;
+    @Schema(defaultValue = "8", description = "Max amount of users that can be created. Admins can create without limitations")
     private int maxUsers = 8;
 
     public Config() {

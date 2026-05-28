@@ -9,6 +9,10 @@ import com.cireonapp.server.dto.*;
 import com.cireonapp.server.util.CookieHelper;
 import com.cireonapp.server.util.EncryptionHelper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,6 +39,48 @@ public class AuthenticationController {
             description = "Login with username and password. If successful, returns a session cookie. If already logged in, returns an error. If username or password is incorrect, returns an error."
     )
     @PostMapping("/login")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Conflict - already logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Incorrect username or password",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = LoginResponseDto.class
+                            )
+                    )
+            )
+    })
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequestDto userCred, HttpServletResponse response, HttpServletRequest request) {
         Optional<User> userFromSession = CookieHelper.getUserFromSessionCookie(request);
 
@@ -97,6 +143,28 @@ public class AuthenticationController {
             description = "If user is logged in, will log out the user by deleting the session and clearing the cookie. If no valid session is found, returns an error."
     )
     @PostMapping("/logout")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully logged out",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = SuccessResponseDto.class
+                            )
+                    )
+            )
+    })
     public ResponseEntity<?> logout(HttpServletRequest request, HttpServletResponse response) {
         Optional<Cookie> authCookie = CookieHelper.getAuthCookie(request);
 

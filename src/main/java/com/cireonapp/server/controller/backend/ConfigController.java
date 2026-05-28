@@ -9,6 +9,10 @@ import com.cireonapp.server.dto.SuccessResponseDto;
 import com.cireonapp.server.dto.UpdateConfigRequestDto;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -33,6 +37,38 @@ public class ConfigController {
             description = "Get the current config."
     )
     @GetMapping("/get")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have sufficient permissions",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully retrieved config",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = Config.class
+                            )
+                    )
+            )
+    })
     public static ResponseEntity<?> get(HttpServletRequest request) {
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
         if (user.isEmpty())
@@ -49,6 +85,48 @@ public class ConfigController {
                 .body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
     }
 
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have sufficient permissions",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - Not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully updated config",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = SuccessResponseDto.class
+                            )
+                    )
+            )
+    })
     @Operation(
             summary = "Update config.",
             description = "Update the config. Might require restarting the app for some changes to apply."

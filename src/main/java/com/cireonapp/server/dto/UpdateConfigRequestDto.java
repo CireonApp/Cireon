@@ -1,15 +1,20 @@
 package com.cireonapp.server.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.Size;
 
 
+@Schema(
+        name = "Update Config Request",
+        description = "Request DTO for updating server configuration.")
 public class UpdateConfigRequestDto {
-    @Min(value = 0,message = "port must be above 0!")
-    @Max(value = 65535,message = "port must be above 65535!")
+    @Min(value = 0, message = "port must be above 0!")
+    @Max(value = 65535, message = "port must be above 65535!")
+    @Schema(defaultValue = "50262", description = "REQUIRES RESTART! the port the server is listening to")
     public Integer port;
 
-    @Min(value = 0,message = "maxUsers must be above 0!")
+    @Min(value = 0, message = "maxUsers must be above 0!")
+    @Schema(defaultValue = "8", description = "Max amount of users that can be created. Admins can create without limitations")
     public Integer maxUsers;
 }

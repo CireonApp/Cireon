@@ -5,9 +5,16 @@ import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.dto.CommonResponseDto;
+import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.dto.MovieResponseDto;
+import com.cireonapp.server.dto.SourceResponseDto;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
@@ -30,7 +37,29 @@ public class MovieController {
             description = "Search movies by title. Returns a list of movies that match the query with scoring."
     )
     @GetMapping("/search")
-    public ResponseEntity<?> getAll(HttpServletRequest request, @RequestParam(value = "query", defaultValue = "") String query) {
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully queried movies",
+                    content = @Content(
+                            mediaType = "application/json",
+                            array = @ArraySchema(
+                                    schema = @Schema(implementation = SourceResponseDto.class)
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - User is not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            )
+    })
+    public ResponseEntity<?> search(HttpServletRequest request, @RequestParam(value = "query", defaultValue = "") String query) {
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
 
         if (user.isEmpty()) {

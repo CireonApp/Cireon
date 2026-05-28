@@ -1,16 +1,17 @@
 package com.cireonapp.server.controller.backend;
 
 import com.cireonapp.server.domain.config.ConfigManager;
-import com.cireonapp.server.domain.session.Session;
-import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.*;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.dizitart.no2.exceptions.UniqueConstraintException;
@@ -35,6 +36,48 @@ public class UserController {
             description = "Create a new user."
     )
     @PostMapping(value = "/create")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Successfully created a user.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = LoginResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - Maximum number of users reached or insufficient permissions.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Bad Request - Invalid input data.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            )
+    })
     public ResponseEntity<?> createUser(@Valid @RequestBody NewUserRequestDto user, HttpServletRequest request) {
 
 
@@ -75,45 +118,69 @@ public class UserController {
         return errors;
     }
 
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(UniqueConstraintException.class)
-    public ResponseEntity<?> handleUniqueConstraintExceptions() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.USERNAME_ALREADY_EXISTS);
-    }
-
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<?> handleMessageNotReadableExceptions() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.JSON_PARSING_ERROR);
-    }
-
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    public ResponseEntity<?> handleMediaTypeNotSupportedExceptions() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(CommonResponseDto.Error.INVALID_JSON_BODY);
-    }
-
     @Operation(
             summary = "Delete a user.",
-            description = "Delete a user. You  can delete your own user when authenticated or if you have the right permissions, you can delete any user. Leave username param to delete your username."
+            description = "Delete a user. You can delete your own user when authenticated or if you have the right permissions, you can delete any user. Leave username param empty to delete your use."
     )
     @DeleteMapping("/delete")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully deleted a user.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = SuccessResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - User is not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have sufficient permissions",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Not Found - User with the given username was not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            )
+    }
+    )
     public ResponseEntity<?> delete(@RequestParam(value = "username", required = false) String username, HttpServletRequest request) {
 
         Optional<Cookie> cookie = CookieHelper.getAuthCookie(request);
         if (cookie.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
-        }
-
-        Optional<Session> session = SessionManager.get(cookie.get().getValue());
-        if (session.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
-        }
-
-        Optional<User> user = UserManager.get(session.get().getUsername());
-        if (user.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
-        }
 
 
         if (username == null || username.equals(user.get().getUsername())) {
@@ -137,7 +204,6 @@ public class UserController {
                 return ResponseEntity.ok(new SuccessResponseDto("User deleted successfully"));
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(CommonResponseDto.Error.INTERNAL_SERVER_ERROR);
         }
-
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
 
