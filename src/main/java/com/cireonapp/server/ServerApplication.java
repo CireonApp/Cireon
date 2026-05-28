@@ -1,5 +1,6 @@
 package com.cireonapp.server;
 
+import ch.qos.logback.classic.Level;
 import com.cireonapp.server.domain.config.Config;
 import com.cireonapp.server.domain.config.ConfigManager;
 import com.cireonapp.server.initializer.AppPath;
@@ -7,7 +8,6 @@ import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.initializer.FileWatcher;
 import com.cireonapp.server.initializer.SourceSubscription;
 import com.cireonapp.server.util.DataDirHelper;
-import ch.qos.logback.classic.Level;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,11 +66,12 @@ public class ServerApplication {
         } catch (Throwable e) {
             // DevTools throws SilentExitException intentionally on restart — let it through
             if (!e.getClass().getName().contains("SilentExitException")) {
-                if (e.getClass().getName().contains("PortInUseException"))
+                if (e.getClass().getName().contains("PortInUseException")){
                     LOGGER.warn("Port is already in use!");
-                System.out.println("\nPress Enter to close...");
-                new Scanner(System.in).nextLine();
-                System.exit(1);
+                    LOGGER.warn("\nPress Enter to close...");
+                    new Scanner(System.in).nextLine();
+                    System.exit(1);
+                }
             }
         }
     }
