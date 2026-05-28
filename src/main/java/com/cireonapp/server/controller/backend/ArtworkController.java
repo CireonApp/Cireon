@@ -35,10 +35,10 @@ import java.util.Optional;
 public class ArtworkController {
     private static final String APP_ICON_RESOURCE = "static/assets/icons/cireon_nobackground.svg";
 
-    private enum ArtworkType {
+    public enum ArtworkType {
         background,
         poster,
-        logo;
+        logo
     }
 
     @Autowired
@@ -87,10 +87,7 @@ public class ArtworkController {
             return Mono.error(new IllegalArgumentException(CommonResponseDto.Error.NOT_LOGGED_IN.errorMessage));
         }
 
-        //TODO add readContent permission check
 
-
-        ServerApplication.LOGGER.info("test");
         Artwork artwork;
         String imagePath = "";
 
@@ -104,7 +101,7 @@ public class ArtworkController {
                 break;
 
             case null, default:
-                return Mono.empty();
+                return Mono.error(new FileNotFoundException("The requested content was not found!"));
         }
 
         if (artwork == null) {
@@ -140,13 +137,23 @@ public class ArtworkController {
         }
 
         return service.getContent(imagePath)
-                .onErrorResume(FileNotFoundException.class, error -> service.getClasspathContent(APP_ICON_RESOURCE));
+                .onErrorResume(FileNotFoundException.class, error -> Mono.error(new FileNotFoundException("The requested content was not found!")));
     }
 
 
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
-        return ResponseEntity.status(401).body(new ErrorResponseDto(ex.getMessage()));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponseDto(ex.getMessage()));
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(FileNotFoundException.class)
+    public ResponseEntity<ErrorResponseDto> handleFileNotFound(FileNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new ErrorResponseDto(ex.getMessage()));
     }
 }
