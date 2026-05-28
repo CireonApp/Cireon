@@ -1,7 +1,7 @@
 package com.cireonapp.server.dto;
 
 import com.cireonapp.server.domain.user.UserPermissions;
-import com.cireonapp.server.util.TimeHelper;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.Set;
 
@@ -17,8 +17,8 @@ public class LoginResponseDto extends ResponseDto {
     public Set<UserPermissions> permissions;
 
     public LoginResponseDto(String displayName, Set<UserPermissions> permissions) {
+        super();
         this.displayName = displayName;
         this.permissions = permissions;
-        this.timestamp = TimeHelper.getCurrentTimeISO();
     }
 }

@@ -12,7 +12,7 @@ public class ErrorResponseDto extends ResponseDto {
     public String errorMessage;
 
     public ErrorResponseDto(String errorMessage) {
+        super();
         this.errorMessage = errorMessage;
-        this.timestamp = TimeHelper.getCurrentTimeISO();
     }
 }

@@ -11,6 +11,7 @@ public class SuccessResponseDto extends ResponseDto {
     public String successMessage;
 
     public SuccessResponseDto(String successMessage) {
+        super();
         this.successMessage = successMessage;
     }
 }
