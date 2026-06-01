@@ -64,14 +64,20 @@ public class ServerApplication {
             LOGGER.info("Data folder location: {}", AppPath.APP_DIR);
             LOGGER.info("Server started on port {}", config.getPort());
         } catch (Throwable e) {
-            // DevTools throws SilentExitException intentionally on restart — let it through
-            if (!e.getClass().getName().contains("SilentExitException")) {
-                if (e.getClass().getName().contains("PortInUseException")){
-                    LOGGER.warn("Port is already in use!");
-                    LOGGER.warn("\nPress Enter to close...");
-                    new Scanner(System.in).nextLine();
-                    System.exit(1);
-                }
+            String exceptionName = e.getClass().getName();
+
+            // DevTools uses this exception internally to restart the app. do not print as an error.
+            if (exceptionName.contains("SilentExitException")) {
+                return;
+            }
+
+            e.printStackTrace();
+
+            if (exceptionName.contains("PortInUseException")) {
+                LOGGER.warn("Port is already in use!");
+                LOGGER.warn("\nPress Enter to close...");
+                new Scanner(System.in).nextLine();
+                System.exit(1);
             }
         }
     }
