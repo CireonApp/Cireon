@@ -25,8 +25,9 @@
 
 - The app is built with an API so you can reach it without using the web app.  
   You can make your own apps using the api.
-- The API documentation is not available yet but you will be able to access it using the /api/docs page.
+- The API documentation is available at `/api/docs` endpoint. Created with OpenAPI and Swagger UI
 
 ## License
 
-This project is licensed under the GPL-3.0 license
+This project is licensed under the GPL-3.0-only license.  
+For more information about third-party dependencies, see [THIRD-PARTY-NOTICES.txt](./THIRD-PARTY-NOTICES.txt)
