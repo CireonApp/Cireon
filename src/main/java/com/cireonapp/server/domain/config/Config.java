@@ -12,6 +12,10 @@ public class Config {
     private int port = 50262;
     @Schema(defaultValue = "8", description = "Max amount of users that can be created. Admins can create without limitations")
     private int maxUsers = 8;
+    @Schema(defaultValue = "true", description = "Whether users are allowed to be created at all. If false, only admins can create users")
+    private boolean allowUserCreation = true;
+    @Schema(defaultValue = "false", description = "Whether users are allowed to be created at all. If false, only admins can create users")
+    private boolean firstTimeSetupComplete = false;
 
     public Config() {
     }
@@ -32,9 +36,21 @@ public class Config {
         this.maxUsers = maxUsers;
     }
 
-//    public Config(Optional<Integer> port, Optional<Integer> maxUsers) {
-//        this.port = port.orElse(50262);
-//        this.maxUsers = maxUsers.orElse(8); // Default value
-//    }
+    public boolean isAllowUserCreation() {
+        return allowUserCreation;
+    }
+
+    public void setAllowUserCreation(boolean allowUserCreation) {
+        this.allowUserCreation = allowUserCreation;
+    }
+
+    public boolean isFirstTimeSetupComplete() {
+        return firstTimeSetupComplete;
+    }
+
+    public void setFirstTimeSetupComplete(boolean firstTimeSetupComplete) {
+        this.firstTimeSetupComplete = firstTimeSetupComplete;
+    }
+
 
 }

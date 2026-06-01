@@ -17,4 +17,10 @@ public class UpdateConfigRequestDto {
     @Min(value = 0, message = "maxUsers must be above 0!")
     @Schema(defaultValue = "8", description = "Max amount of users that can be created. Admins can create without limitations")
     public Integer maxUsers;
+
+    @Schema(defaultValue = "true", description = "Whether users are allowed to be created at all. If false, only admins can create users")
+    public Boolean allowUserCreation;
+
+    @Schema(defaultValue = "false", description = "Whether the first time setup has been completed.")
+    public Boolean firstTimeSetupComplete;
 }
