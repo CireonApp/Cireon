@@ -1,6 +1,6 @@
 {
   "name": "Cireon",
-  "short_name": "Cireo",
+  "short_name": "Cireon",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -17,5 +17,5 @@
   ],
   "theme_color": "#0ab2bd",
   "background_color": "#0ab2bd",
-  "display": "standalone",
+  "display": "standalone"
 }
