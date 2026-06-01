@@ -1,9 +1,7 @@
 package com.cireonapp.server.dto;
 
-import com.cireonapp.server.domain.user.UserPermissions;
+import com.cireonapp.server.domain.user.User;
 import io.swagger.v3.oas.annotations.media.Schema;
-
-import java.util.Set;
 
 @Schema(
         name = "Login Response",
@@ -11,14 +9,25 @@ import java.util.Set;
 )
 public class LoginResponseDto extends ResponseDto {
 
-    @Schema(description = "Display name of the user that logged in")
+    @Schema(description = "Display name of the user")
     public String displayName;
-    @Schema(description = "Permissions of the user that logged in")
-    public Set<UserPermissions> permissions;
+    @Schema(description = "Whether the user has admin permissions or not")
+    public boolean admin;
+    @Schema(description = "Last interaction date of the user")
+    public String lastUse;
+    @Schema(description = "Creation date of the user")
+    public String created;
 
-    public LoginResponseDto(String displayName, Set<UserPermissions> permissions) {
+
+    public LoginResponseDto(User user) {
         super();
-        this.displayName = displayName;
-        this.permissions = permissions;
+        convertFromUser(user);
+    }
+
+    private void convertFromUser(User user) {
+        this.displayName = user.getDisplayName();
+        this.admin = user.isAdministrator();
+        this.lastUse = user.getLastUseDate();
+        this.created = user.getCreationDate();
     }
 }

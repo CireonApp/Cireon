@@ -4,7 +4,6 @@ import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.domain.media.source.SourceType;
 import com.cireonapp.server.domain.user.User;
-import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.CommonResponseDto;
 import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.service.ContentService;
@@ -19,13 +18,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
-import javax.naming.NoPermissionException;
 import java.io.FileNotFoundException;
 import java.util.Optional;
 
@@ -88,13 +87,6 @@ public class StreamingController {
             return Mono.error(new IllegalArgumentException(CommonResponseDto.Error.NOT_LOGGED_IN.errorMessage));
         }
 
-        boolean isAdmin = user.get().getPermissions().contains(UserPermissions.ADMINISTRATOR);
-        boolean canReadContent = user.get().getPermissions().contains(UserPermissions.CONTENT_READ);
-
-        if (!isAdmin && !canReadContent) {
-            return Mono.error(new NoPermissionException(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS.errorMessage));
-        }
-
         SourceType sourceType = GuessMediaType.guess(hash);
         if (sourceType == null) {
             return Mono.error(new FileNotFoundException("The requested content was not found!"));
@@ -112,28 +104,6 @@ public class StreamingController {
     }
 
 
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @ExceptionHandler(FileNotFoundException.class)
-    public ResponseEntity<ErrorResponseDto> handleFileNotFound(FileNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponseDto(ex.getMessage() != null ? ex.getMessage() : "The requested content was not found!"));
-    }
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponseDto> handleIllegalArgument(IllegalArgumentException ex) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponseDto(ex.getMessage()));
-    }
-
-    @ResponseStatus(HttpStatus.FORBIDDEN)
-    @ExceptionHandler(NoPermissionException.class)
-    public ResponseEntity<ErrorResponseDto> handlePermissionException(NoPermissionException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponseDto(ex.getMessage()));
-    }
 
 }

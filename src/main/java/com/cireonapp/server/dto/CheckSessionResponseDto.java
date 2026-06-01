@@ -1,10 +1,7 @@
 package com.cireonapp.server.dto;
 
-import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.domain.user.UserSettings;
 import io.swagger.v3.oas.annotations.media.Schema;
-
-import java.util.Set;
 
 @Schema(
         name = "Check Session Response",
@@ -15,16 +12,16 @@ public class CheckSessionResponseDto extends ResponseDto {
     public String displayName;
     @Schema(description = "Username of the user that is logged in")
     public String username;
-    @Schema(description = "Permissions of the user that is logged in")
-    public Set<UserPermissions> permissions;
+    @Schema(description = "Whether the user that is logged in is an admin or not")
+    public boolean admin;
     @Schema(description = "Settings of the user that is logged in")
     public UserSettings settings;
 
-    public CheckSessionResponseDto(String username, String displayName, Set<UserPermissions> permissions, UserSettings settings) {
+    public CheckSessionResponseDto(String username, String displayName, boolean admin, UserSettings settings) {
         super();
         this.username = username;
         this.displayName = displayName;
-        this.permissions = permissions;
+        this.admin = admin;
         this.settings = settings;
     }
 }

@@ -1,5 +1,6 @@
 package com.cireonapp.server.domain.user;
 
+import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.util.EncryptionHelper;
@@ -10,11 +11,9 @@ import org.dizitart.no2.exceptions.UniqueConstraintException;
 import org.dizitart.no2.filters.Filter;
 import org.dizitart.no2.repository.Cursor;
 
-import java.awt.*;
-import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.Optional;
-import java.util.Set;
+
+import static org.dizitart.no2.filters.FluentFilter.where;
 
 public class UserManager {
     /**
@@ -28,13 +27,35 @@ public class UserManager {
             return false;
         }
 
-        if (getAll().isEmpty()) {
+        if (!atLeastOneAdmin()) {
             //first user must be set to administrator
-            user.setPermissions(Set.of(UserPermissions.ADMINISTRATOR));
+            user.setAdministrator(true);
         }
         user.setPassword(EncryptionHelper.encryptPassword_argon2(user.getPassword()));
         WriteResult result = Databases.userRepository.insert(user);
         return result.getAffectedCount() > 0;
+    }
+
+    private static boolean atLeastOneAdmin() {
+
+        return !Databases.userRepository.find(where("administrator").eq(true)).isEmpty();
+    }
+
+    public static boolean updateLastUse(User user) {
+        return updateLastUse(user.getUsername());
+    }
+
+    public static boolean updateLastUse(String username) {
+        ServerApplication.LOGGER.info("Updating last use: " + username);
+
+        Optional<User> optUser = get(username);
+        if (optUser.isEmpty()) return false;
+
+        User user = optUser.get();
+        user.updateLastUseDate();
+
+        Databases.userRepository.update(user);
+        return true;
     }
 
     public static boolean update(String username, User updateInfo) {
@@ -59,45 +80,25 @@ public class UserManager {
      * Special handling for 'password' field (applies encryption).
      */
     private static void mergeFields(User target, User source) {
-        Field[] fields = User.class.getDeclaredFields();
 
-        for (Field field : fields) {
-            field.setAccessible(true);
-
-            try {
-                // Skip username field - never allow changes
-                if ("username".equals(field.getName())) {
-                    continue;
-                }
-
-                Object sourceValue = field.get(source);
-
-                // Skip null values
-                if (sourceValue == null) {
-                    continue;
-                }
-
-                // Skip empty strings
-                if (sourceValue instanceof String && ((String) sourceValue).isBlank()) {
-                    continue;
-                }
-
-                // Skip empty collections
-                if (sourceValue instanceof Collection && ((Collection<?>) sourceValue).isEmpty()) {
-                    continue;
-                }
-
-                // Special handling for password: encrypt before setting
-                if ("password".equals(field.getName())) {
-                    field.set(target, EncryptionHelper.encryptPassword_argon2((String) sourceValue));
-                } else {
-                    // Copy any other non-null/non-empty field
-                    field.set(target, sourceValue);
-                }
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Failed to merge field: " + field.getName(), e);
-            }
+        if (source.getPassword() != null && !source.getPassword().isBlank()) {
+            target.setPassword(
+                    EncryptionHelper.encryptPassword_argon2(source.getPassword())
+            );
         }
+
+        if (source.getDisplayName() != null && !source.getDisplayName().isBlank()) {
+            target.setDisplayName(source.getDisplayName());
+        }
+
+        if (source.getLastUseDate() != null && !source.getLastUseDate().isBlank()) {
+            target.setLastUseDate(source.getLastUseDate());
+        }
+
+        if (source.getSettings() != null) {
+            target.setSettings(source.getSettings());
+        }
+
     }
 
     /**
@@ -108,7 +109,7 @@ public class UserManager {
      */
     public static boolean delete(User user) {
         WriteResult result = Databases.userRepository.remove(user);
-        SessionManager.deleteAllForUser(user.getUsername(),null,true);
+        SessionManager.deleteAllForUser(user.getUsername(), null, true);
         return result.getAffectedCount() > 0;
     }
 
