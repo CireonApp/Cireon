@@ -78,6 +78,9 @@
             <a href="/settings" type="button"
                class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
                 Settings<span class="font-material-outlined text-lg">settings</span></a>
+            <a th:if="${user.administrator}" href="/admin" type="button"
+               class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
+                Admin Panel<span class="font-material-outlined text-lg">shield_person</span></a>
             <a href="/watchlist" type="button"
                class="flex w-full items-center justify-between rounded-sm bg-background px-2 py-1.5 text-sm hover:bg-background-light/10 active:bg-background-light/10">
                 My list<span class="font-material-outlined text-lg">bookmark</span></a>

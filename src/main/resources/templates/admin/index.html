@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:replace="~{fragments/headLinks::headLinks}"></th:block>
+    <link rel="stylesheet" th:href="@{/assets/styles/style.css}"/>
+    <meta charset="UTF-8">
+    <script th:src="@{/assets/scripts/global.js}"></script>
+    <script th:src="@{/assets/scripts/admin.js}"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Cireon Settings</title>
+</head>
+<body class="margin-0 min-h-svh bg-gradient">
+<header th:replace="~{fragments/header::header(${user})}"></header>
+<div class="w-full flex justify-center p-2">
+    <div class="border flex max-sm:flex-col rounded-xl gap-2 p-2 w-full lg:w-1/2 justify-around border-white/10 bg-background-modal/70">
+
+        <a th:classappend="${settings=='config'?'active-tab':''}" href="/admin/config" type="button"
+           class="flex gap-2 w-full items-center justify-center rounded-sm bg-background px-2 py-1.5  text-sm md:text-xl hover:bg-background-light/10 active:bg-background-light/10">
+            <span class="font-material-outlined text-2xl md:text-3xl">settings</span>Configuration</a>
+
+        <a th:classappend="${settings=='users'?'active-tab':''}" href="/admin/users" type="button"
+           class="flex gap-2 w-full items-center justify-center rounded-sm bg-background px-2 py-1.5  text-sm md:text-xl hover:bg-background-light/10 active:bg-background-light/10">
+            <span class="font-material-outlined text-2xl md:text-3xl">groups</span>Users</a>
+
+        <a th:classappend="${settings=='content'?'active-tab':''}" href="/admin/content" type="button"
+           class="flex gap-2 w-full items-center justify-center rounded-sm bg-background px-2 py-1.5 text-sm md:text-xl hover:bg-background-light/10 active:bg-background-light/10">
+            <span class="font-material-outlined text-2xl md:text-3xl">folder_open</span>Content</a>
+
+    </div>
+
+</div>
+<div class="w-full flex justify-center md:px-[8%] xl:px-[16%] px-2">
+    <th:block th:if="${settings == 'config'}">
+        <div th:replace="~{fragments/admin::config(${currentSettings})}"></div>
+    </th:block>
+    <th:block th:if="${settings == 'users'}">
+        <div th:replace="~{fragments/admin::users(${userList})}"></div>
+    </th:block>
+    <th:block th:if="${settings == 'content'}">
+        <div th:replace="~{fragments/admin::content}"></div>
+    </th:block>
+
+</div>
+</body>
+</html>

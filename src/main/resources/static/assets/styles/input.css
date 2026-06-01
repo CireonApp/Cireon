@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-
-    user-select: none;
+    scroll-behavior: smooth;
+    /*user-select: none;*/
     /*common*/
     --primary: #00BABA;
     --primary-100: #009595;
@@ -128,4 +128,19 @@ body {
 
 .horizontal-scrollbar {
     @apply scrollbar-thumb-zinc-400 pb-2;
+}
+
+.active-tab {
+    @apply font-bold bg-background-light/10;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
 }
