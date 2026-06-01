@@ -48,12 +48,11 @@
                 id="submit-button" type="submit">Login
         </button>
     </form>
-
-
     <div class="flex w-full flex-col gap-2 text-sm font-medium text-zinc-400 sm:flex-row sm:items-center sm:justify-between">
-        <a rel="noreferrer" class="transition hover:text-primary hover:underline underline-offset-4" href="/signup">Create an account</a>
-        <a rel="noreferrer" class="transition hover:text-primary hover:underline underline-offset-4" href="/admin">Admin panel</a>
+        <a rel="noreferrer" class="transition hover:text-primary hover:underline underline-offset-4" href="/signup" th:if="${allowUserCreation}">Create an account</a>
+        <button onclick="alert('ask user to log in or if they dont have access to account ask for a recovery code... can be found in console probably idk...')" class="transition hover:text-primary hover:underline underline-offset-4 cursor-pointer">Admin panel</button>
     </div>
+
 </div>
 </body>
 </html>
