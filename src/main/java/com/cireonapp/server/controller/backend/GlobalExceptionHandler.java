@@ -23,7 +23,7 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(HttpClientErrorException.TooManyRequests.class)
-    public ResponseEntity<String> handleRestClientTooManyRequests(HttpClientErrorException.TooManyRequests ex) {
+    public ResponseEntity<String> handleRestClientTooManyRequests(HttpClientErrorException.TooManyRequests ignored) {
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
                 .body("Too Many Requests, please try again in a few moments.");
@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
 
     // Catching Spring WebFlux/WebClient 429 exceptions (Since your POM includes WebFlux)
     @ExceptionHandler(WebClientResponseException.TooManyRequests.class)
-    public ResponseEntity<String> handleWebClientTooManyRequests(WebClientResponseException.TooManyRequests ex) {
+    public ResponseEntity<String> handleWebClientTooManyRequests(WebClientResponseException.TooManyRequests ignored) {
         return ResponseEntity
                 .status(HttpStatus.TOO_MANY_REQUESTS)
                 .body("Too Many Requests, please try again in a few moments.");

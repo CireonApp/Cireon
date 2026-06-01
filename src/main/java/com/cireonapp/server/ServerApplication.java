@@ -82,10 +82,6 @@ public class ServerApplication {
         }
     }
 
-    public static void restart() {
-        application.restart();
-    }
-
     private static void silenceLogger(String name) {
         ((ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name)).setLevel(Level.OFF);
     }
