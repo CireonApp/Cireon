@@ -1,5 +1,6 @@
 package com.cireonapp.server.controller.frontend;
 
+import com.cireonapp.server.domain.config.ConfigManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.util.CookieHelper;
@@ -14,6 +15,11 @@ import java.util.Optional;
 public class SignupController {
     @GetMapping("/signup")
     String signup(Model model, HttpServletRequest request) {
+
+        if (!ConfigManager.get().isAllowUserCreation()) {
+            return "redirect:/";
+        }
+
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
 
         if (user.isPresent()) {
