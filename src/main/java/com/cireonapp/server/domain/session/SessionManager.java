@@ -15,7 +15,34 @@ import java.util.Optional;
 import static org.dizitart.no2.filters.FluentFilter.where;
 
 public class SessionManager {
+    public static final long SESSION_EXPIRATION_TIME_SECONDS = 2592000L; // 30 days in seconds
     private static SecureRandom secureRandom = new SecureRandom();
+
+    private static Optional<Session> findByRawToken(String token) {
+        if (token == null || token.isBlank()) {
+            return Optional.empty();
+        }
+
+        String hashedToken = EncryptionHelper.hashSHA256(token);
+        return Optional.ofNullable(Databases.sessionRepository.getById(hashedToken));
+    }
+
+    private static boolean isSessionUsable(Session session) {
+        if (session == null) {
+            return false;
+        }
+
+        String username = session.getUsername();
+        if (username == null || username.isBlank()) {
+            return false;
+        }
+
+        if (!UserManager.exists(username)) {
+            return false;
+        }
+
+        return !sessionExpired(session.getCreationTime());
+    }
 
     private static String generateToken() {
         byte[] randomBytes = new byte[16];
@@ -26,16 +53,20 @@ public class SessionManager {
 
 
     public static boolean isValid(String token) {
-        Optional<Session> sessionOpt = get(token);
+        Optional<Session> sessionOpt = findByRawToken(token);
+        return sessionOpt.filter(SessionManager::isSessionUsable).isPresent();
+    }
 
-        if (sessionOpt.isEmpty())
-            return false;
 
+    public static boolean sessionExpired(String timeISO) {
+        long sessionTime = TimeHelper.parseTimeFromISO(timeISO);
+        if (sessionTime < 0) {
+            return true;
+        }
 
-        if (!UserManager.exists(sessionOpt.get().getUsername()))
-            return false;
+        long currentTime = TimeHelper.getCurrentTime();
 
-        return true;
+        return currentTime - sessionTime > SESSION_EXPIRATION_TIME_SECONDS;
     }
 
     public static Optional<Session> create(String username, String device) {
@@ -52,6 +83,9 @@ public class SessionManager {
     }
 
     public static boolean delete(String token) {
+        if (token == null || token.isBlank()) {
+            return false;
+        }
         token = EncryptionHelper.hashSHA256(token);
         Session session = Databases.sessionRepository.getById(token);
         if (session == null) return false;
@@ -60,15 +94,33 @@ public class SessionManager {
     }
 
     public static Optional<Session> get(String token) {
-        token = EncryptionHelper.hashSHA256(token);
-        return Optional.ofNullable(Databases.sessionRepository.getById(token));
+        Optional<Session> sessionOpt = findByRawToken(token);
+        if (sessionOpt.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Session session = sessionOpt.get();
+        if (sessionExpired(session.getCreationTime())) {
+            Databases.sessionRepository.remove(session);
+            return Optional.empty();
+        }
+
+        String username = session.getUsername();
+        if (username == null || username.isBlank() || !UserManager.exists(username)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(session);
     }
 
     public static boolean deleteAllForUser(String username, String token, boolean deleteCurrent) {
-        token = EncryptionHelper.hashSHA256(token);
         Filter filter = where("username").eq(username);
         if (!deleteCurrent) {
-            filter = Filter.and(filter, where("token").notEq(token));
+            if (token == null || token.isBlank()) {
+                return false;
+            }
+            String hashedToken = EncryptionHelper.hashSHA256(token);
+            filter = Filter.and(filter, where("token").notEq(hashedToken));
         }
         WriteResult result = Databases.sessionRepository.remove(filter);
         return result.getAffectedCount() > 0;

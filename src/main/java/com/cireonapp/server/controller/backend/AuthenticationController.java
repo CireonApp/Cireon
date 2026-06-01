@@ -21,13 +21,16 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Optional;
 
+import static com.cireonapp.server.domain.session.SessionManager.SESSION_EXPIRATION_TIME_SECONDS;
 
 @Tag(name = "Authentication API", description = "Authentication related endpoints")
-
 @RestController
 @RequestMapping("/api/auth")
 public class AuthenticationController {
@@ -115,7 +118,7 @@ public class AuthenticationController {
         }
 
         Cookie newCookie = new Cookie(AUTH_COOKIE_NAME, session.get().getToken());
-        newCookie.setMaxAge(31536000); // 1 Year
+        newCookie.setMaxAge((int) SESSION_EXPIRATION_TIME_SECONDS);
         newCookie.setSecure(false); // Does not matter since it's a local app to run on a home server...
         newCookie.setHttpOnly(true);
         newCookie.setPath("/");
@@ -125,7 +128,7 @@ public class AuthenticationController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new LoginResponseDto(user.get().getDisplayName(), user.get().getPermissions()));
+                .body(new LoginResponseDto(user.get()));
     }
 
     @Operation(

@@ -4,7 +4,6 @@ import com.cireonapp.server.domain.session.Session;
 import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
-import com.cireonapp.server.domain.user.UserPermissions;
 import com.cireonapp.server.dto.CheckSessionResponseDto;
 import com.cireonapp.server.dto.CommonResponseDto;
 import com.cireonapp.server.dto.ErrorResponseDto;
@@ -22,7 +21,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Objects;
@@ -95,7 +93,7 @@ public class SessionController {
 
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new CheckSessionResponseDto(user.get().getUsername(), user.get().getDisplayName(), user.get().getPermissions(), user.get().getSettings()));
+                .body(new CheckSessionResponseDto(user.get().getUsername(), user.get().getDisplayName(), user.get().isAdministrator(), user.get().getSettings()));
         //TODO: maybe for future just pass the user and handle the Dto in the class itself...
     }
 
@@ -199,11 +197,10 @@ public class SessionController {
                     .body(CommonResponseDto.Error.INTERNAL_SERVER_ERROR);
 
 
-        boolean hasPermission = currentUser.get().getPermissions().contains(UserPermissions.ADMINISTRATOR) ||
-                currentUser.get().getPermissions().contains(UserPermissions.USER_MANAGE);
+        boolean isAdmin = currentUser.get().isAdministrator();
 
 
-        if (!hasPermission && !ownSession) {
+        if (!isAdmin && !ownSession) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
@@ -293,11 +290,5 @@ public class SessionController {
                 .body(CommonResponseDto.Error.NOT_LOGGED_IN);
     }
 
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ResponseEntity<?> handleArrayIndexOutOfBoundsException() {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new ErrorResponseDto("You are missing a request parameter!"));
-    }
+
 }
