@@ -1,5 +1,6 @@
 package com.cireonapp.server.controller.frontend;
 
+import com.cireonapp.server.domain.config.ConfigManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.util.CookieHelper;
@@ -32,6 +33,7 @@ public class LoginController {
             model.addAttribute("usernameInput", username);
         }
 
+        model.addAttribute("allowUserCreation", ConfigManager.get().isAllowUserCreation());
         model.addAttribute("theme", UserManager.getThemeLabel(null).label);
 
         return "login/index";
