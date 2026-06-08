@@ -7,8 +7,8 @@ import com.cireonapp.server.domain.media.source.Source;
 import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.util.ContentHashHelper;
 import com.cireonapp.server.util.InternetConnection;
+import com.cireonapp.server.util.TextSimilarityHelper;
 import info.movito.themoviedbapi.tools.TmdbException;
-import me.xdrop.fuzzywuzzy.FuzzySearch;
 import org.apache.commons.io.FilenameUtils;
 import org.dizitart.no2.collection.FindOptions;
 import org.dizitart.no2.filters.Filter;
@@ -37,10 +37,9 @@ public class MovieManager {
 
     private static final DateTimeFormatter RELEASE_DATE_FORMATTER = DateTimeFormatter.ofPattern("MM/dd/yyyy");
 
-
+//  possibly add an option for threshold in the future for now hardcoded to 60 which is pretty balanced
     public static List<SearchResults<Movie>> search(String query, int limit) {
         if (query == null || query.isBlank() || limit <= 0) return List.of();
-
         String normalizedQuery = query.toLowerCase(Locale.ROOT);
         PriorityQueue<SearchResults<Movie>> topMatches = new PriorityQueue<>(
                 limit,
@@ -51,8 +50,8 @@ public class MovieManager {
             String title = movie.getMetadata() != null ? movie.getMetadata().getTitle() : null;
             if (title == null || title.isBlank()) continue;
 
-            int score = FuzzySearch.weightedRatio(normalizedQuery, title.toLowerCase(Locale.ROOT));
-            if (score <= 70) continue;
+            int score = TextSimilarityHelper.weightedRatio(normalizedQuery, title.toLowerCase(Locale.ROOT));
+            if (score <= 60) continue;
 
             SearchResults<Movie> result = new SearchResults<>(movie, score);
             if (topMatches.size() < limit) {

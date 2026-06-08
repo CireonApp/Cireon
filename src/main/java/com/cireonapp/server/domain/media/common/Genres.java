@@ -1,9 +1,8 @@
 package com.cireonapp.server.domain.media.common;
 
-import info.movito.themoviedbapi.model.core.Genre;
-import me.xdrop.fuzzywuzzy.FuzzySearch;
-import me.xdrop.fuzzywuzzy.model.ExtractedResult;
+import com.cireonapp.server.util.TextSimilarityHelper;
 
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -53,8 +52,26 @@ public enum Genres {
 
 
     public static Optional<Genres> searchGenre(String query) {
-        ExtractedResult result = FuzzySearch.extractOne(query, Set.of(Genres.labels()));
-        return stringToGenre(result.getString());
+        if (query == null || query.isBlank()) return Optional.empty();
+
+        String normalizedQuery = query.toLowerCase(Locale.ROOT).trim();
+
+        Genres bestMatch = null;
+        int bestScore = -1;
+
+        for (Genres genre : Genres.values()) {
+            int score = TextSimilarityHelper.weightedRatio(
+                    normalizedQuery,
+                    genre.label.toLowerCase(Locale.ROOT)
+            );
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = genre;
+            }
+        }
+
+        // Tune this threshold (e.g. 60-80) depending on how strict you want matching
+        return bestScore >= 70 ? Optional.of(bestMatch) : Optional.empty();
     }
 
     public static Optional<Genres> stringToGenre(String genre) {
