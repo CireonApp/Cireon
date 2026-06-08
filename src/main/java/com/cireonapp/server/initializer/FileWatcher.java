@@ -95,4 +95,11 @@ public class FileWatcher implements ApplicationContextInitializer<ConfigurableAp
         }
     }
 
+    public static void initiateWatcher(){
+        try {
+            FileWatcher.watcher = FileSystems.getDefault().newWatchService();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
