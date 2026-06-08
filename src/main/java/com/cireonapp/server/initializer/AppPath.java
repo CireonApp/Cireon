@@ -23,7 +23,7 @@ public class AppPath {
 
             path = Paths.get(
                     appDirs.getUserDataDir(
-                            "CireonBackend", // app name
+                            "Cireon", // app name
                             null,            // version
                             "Cireon"         // author/company
                     )
