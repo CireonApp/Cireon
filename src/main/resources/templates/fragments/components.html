@@ -48,7 +48,7 @@
             </div>
 
             <div class="w-full md:w-auto pt-2 md:pt-0">
-                <a href="/watch/test"
+                <a th:href="|/media/player?id=${media.id}|"
                    class="gloss-surface w-full flex gap-0.5 flex-row items-center justify-center md:w-auto text-center group-hover:animate-bg-gloss md:group-hover:scale-105 duration-300 tracking-widest break-keep whitespace-nowrap bg-primary rounded-lg py-3 px-8 font-black text-white shadow-sm transition hover:brightness-95 active:brightness-90 light:text-primary-400">
                     <span class="font-material-sharp text-3xl font-medium">play_circle</span>
                     Watch Now
@@ -74,10 +74,11 @@
 </div>
 
 <!--/*@thymesVar id="poster" type="com.cireonapp.server.domain.media.common.CarouselPoster"*/-->
-<a class="select-none rounded-md lg:w-40 w-24 shrink-0 overflow-hidden group border hover:bg-background-light/10 border-white/10 bg-background-modal/95 md:p-1 transition-all duration-500 cursor-pointer"
+<a class="select-none flex flex-col rounded-md lg:w-40 w-24 shrink-0 overflow-hidden group border hover:bg-background-light/10 border-white/10 bg-background-modal/95 md:p-1 transition-all duration-500 cursor-pointer"
    th:fragment="carouselPoster(poster)">
-    <p th:text="${poster.releaseDate}"> </p>
     <img draggable="false" class="w-full group-hover:scale-105 transition-all duration-500 rounded-sm" th:title="${poster.title}" th:src="|/api/artwork?type=poster&id=${poster.hash}|" alt="">
+    <p class="truncate" th:text="${poster.title}"> </p>
+    <p class="text-right w-full" th:text="${poster.releaseDate}"> </p>
 </a>
 
 
