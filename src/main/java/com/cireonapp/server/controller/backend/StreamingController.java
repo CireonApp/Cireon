@@ -102,8 +102,4 @@ public class StreamingController {
         }
         return Mono.error(new FileNotFoundException("Unsupported content type"));
     }
-
-
-
-
 }
