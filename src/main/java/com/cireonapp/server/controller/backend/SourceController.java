@@ -6,6 +6,7 @@ import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.dto.CommonResponseDto;
 import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.dto.SourceResponseDto;
+import com.cireonapp.server.dto.SuccessResponseDto;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
@@ -18,10 +19,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.dizitart.no2.repository.Cursor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
@@ -146,4 +144,98 @@ public class SourceController {
 
         return ResponseEntity.ok(source.get());
     }
+
+    @Operation(
+            summary = "Delete a source.",
+            description = "Delete a source. Only admins can manage sources."
+    )
+    @DeleteMapping("/delete")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Successfully deleted a source.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = SuccessResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Unauthorized - User is not logged in",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Forbidden - User does not have sufficient permissions",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Not Found - A source with the given id was not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "500",
+                    description = "Internal Server Error - An error occurred while processing your request.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Bad Request - You are missing a parameter.",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(
+                                    implementation = ErrorResponseDto.class
+                            )
+                    )
+            )
+    }
+    )
+    public ResponseEntity<?> delete(@RequestParam(value = "id") String sourceID, HttpServletRequest request) {
+
+        Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
+        if (user.isEmpty())
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
+
+
+        if(!user.get().isAdministrator()){
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
+        }
+
+        Optional<Source> sourceFromParam = SourceManager.get(sourceID);
+        if (sourceFromParam.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(CommonResponseDto.Error.CONTENT_NOT_FOUND);
+        }
+
+        boolean deleteReq = SourceManager.delete(sourceFromParam.get());
+
+        if(deleteReq){
+            return ResponseEntity.ok(new SuccessResponseDto("Source was deleted successfully!"));
+        }
+
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(CommonResponseDto.Error.INTERNAL_SERVER_ERROR);
+    }
+
 }
