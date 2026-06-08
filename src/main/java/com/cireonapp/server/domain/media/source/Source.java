@@ -31,7 +31,8 @@ public class Source {
 
     public Source() {
         id = UUID.randomUUID().toString();
-
+        enabled = true;
+        watchForChanges = true;
     }
 
     public Path getDirPath() {
