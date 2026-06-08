@@ -1,6 +1,7 @@
 package com.cireonapp.server.controller.frontend;
 
 import com.cireonapp.server.domain.config.ConfigManager;
+import com.cireonapp.server.domain.media.source.SourceManager;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.domain.user.UserManager;
 import com.cireonapp.server.util.CookieHelper;
@@ -38,6 +39,9 @@ public class AdminPanelController {
             case "config":
                 model.addAttribute("currentSettings", ConfigManager.get());
                 break;
+
+            case "content":
+                model.addAttribute("sourceList", SourceManager.getAll().toList());
         }
 
         return "admin/index";

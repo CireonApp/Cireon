@@ -134,9 +134,55 @@
         </table>
     </div>
 </div>
-<div class=" border rounded-md gap-2 p-4 w-full justify-around border-white/10 bg-background-modal/70"
-     th:fragment="content">
-    <p>content</p>
+<div class="border flex flex-col items-center rounded-md gap-2 p-4 w-full justify-around border-white/10 bg-background-modal/70"
+     th:fragment="content(sourceList)">
+    <button class="cursor-pointer max-sm:w-full rounded-lg bg-primary p-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400"
+            id="create-source">Create Source
+    </button>
+    <div th:if="${#arrays.length(sourceList) > 0}"
+         class="overflow-x-auto w-full horizontal-scrollbar rounded-lg border border-white/10 bg-black/10 shadow-inner shadow-black/20">
+        <table class="w-full text-left border-collapse text-sm">
+            <thead>
+            <tr class="text-zinc-200 text-xs font-semibold uppercase tracking-wide  divide-x divide-white/10">
+                <th class="py-3 px-4 text-lg text-center border-b border-white/20">Enabled</th>
+                <th class="py-3 px-4 text-lg text-center border-b border-white/20">Name</th>
+                <th class="py-3 px-4 text-lg text-center border-b border-white/20">Description</th>
+                <th class="py-3 px-4 text-lg text-center border-b border-white/20">Type</th>
+                <th class="py-3 px-4 text-lg text-center border-b border-white/20">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <!--/*@thymesVar id="item" type="com.cireonapp.server.domain.media.source.Source"*/-->
+            <tr th:each="item : ${sourceList}"
+                class="text-zinc-100 border-b border-white/10 odd:bg-white/3 even:bg-transparent hover:bg-primary/10 transition-colors divide-x divide-white/10">
+                <td class="py-3 px-4 text-zinc-100 font-material-rounded font-light text-center text-2xl"
+                    th:text="${item.enabled ? 'check_box' : 'check_box_outline_blank'}"></td>
+                <td class="py-3 px-4 font-semibold text-base text-white max-w-xs truncate"
+                    th:text="${item.name}"></td>
+                <td class="py-3 px-4 text-zinc-50 truncate max-w-sm"
+                    th:text="${#strings.isEmpty(item.description) ? 'N/A' : item.description}"></td>
+                <td class="py-3 px-4 text-zinc-100"
+                    th:text="${item.type.getLabel()}"></td>
+
+                <td class="py-3 px-4">
+                    <div class="flex justify-center gap-3 text-white">
+                        <button title="Edit source information"
+                                th:data-source="${item.id}"
+                                class="cursor-pointer rounded-md px-3 py-2 border border-amber-400/50 bg-amber-500/20 text-amber-50 font-semibold transition hover:bg-amber-500/30 hover:border-amber-300/70">
+
+                            Edit
+                        </button>
+                        <button title="Delete a source"
+                                class="delete-source deleteButtons cursor-pointer rounded-md px-3 py-2 border border-rose-400/60 bg-rose-500/40 text-rose-50 font-semibold transition hover:bg-rose-500/50 hover:border-rose-300/80"
+                                th:data-source-id="${item.id}">
+                            Delete
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 </body>
 </html>

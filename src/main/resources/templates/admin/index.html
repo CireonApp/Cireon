@@ -37,7 +37,7 @@
         <div th:replace="~{fragments/admin::users(${userList})}"></div>
     </th:block>
     <th:block th:if="${settings == 'content'}">
-        <div th:replace="~{fragments/admin::content}"></div>
+        <div th:replace="~{fragments/admin::content(${sourceList})}"></div>
     </th:block>
 
 </div>

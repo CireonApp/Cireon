@@ -37,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
     loginButtons.forEach(button => {
         button.addEventListener('click', async function () {
             const username = this.getAttribute('data-username');
-           await loginAsAdmin(username);
+            await loginAsAdmin(username);
         });
     });
 
@@ -45,10 +45,17 @@ document.addEventListener('DOMContentLoaded', function () {
     deleteButtons.forEach(button => {
         button.addEventListener('click', async function () {
             const username = this.getAttribute('data-username');
-           await deleteAsAdmin(username);
+            await deleteAsAdmin(username);
         });
     });
 
+    const deleteSources = document.querySelectorAll('.delete-source');
+    deleteSources.forEach(button => {
+        button.addEventListener('click', async function () {
+            const id = this.getAttribute('data-source-id');
+            await deleteSource(id);
+        });
+    });
 });
 
 async function handleConfigUpdate(body) {
@@ -129,4 +136,20 @@ function setSuccess(success) {
 function hideSuccess() {
     const errorBubbleElement = document.getElementById("success-bubble");
     errorBubbleElement.style.display = "none";
+}
+
+
+async function deleteSource(id) {
+    const response = await fetch(`/api/source/delete?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+            'accept': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        return;
+    }
+
+    window.location.reload();
 }
