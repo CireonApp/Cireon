@@ -21,16 +21,6 @@ public class EncryptionHelper {
 
 
     public static String hashSHA256(String text) {
-//        MessageDigest digest = null;
-//        try{
-//             digest = MessageDigest.getInstance("SHA-256");
-//        }catch (NoSuchAlgorithmException ignored){
-//
-//        }
-//        assert digest != null;
-//        byte[] hashBytes = digest.digest(text.getBytes(StandardCharsets.UTF_8));
-//
-//        return new String(Hex.encode(hashBytes));
         return DigestUtils.sha256Hex(text);
     }
 
