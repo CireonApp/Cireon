@@ -17,6 +17,21 @@ public class Movie extends CommonMedia {
     private MovieMetadata metadata;
     private MovieMetadata overrides;
 
+    public void merge(Movie newData) {
+        if(newData == null) return;
+        // hash should not be possible to change.
+        if (newData.filePath != null) {
+            this.filePath = newData.filePath;
+        }
+        //update overrides and metadata internally in their own class.
+        if (newData.metadata != null) {
+            this.metadata.merge(newData.metadata);
+        }
+        if (newData.overrides != null) {
+            this.metadata.merge(newData.overrides);
+        }
+    }
+
     public Movie(String hash, Path filePath, MovieMetadata metadata) {
         super(SourceType.MOVIE);
         this.hash = hash;
@@ -24,7 +39,7 @@ public class Movie extends CommonMedia {
         this.metadata = metadata;
     }
 
-    public Movie(){
+    public Movie() {
         super(SourceType.MOVIE);
     }
 
@@ -44,8 +59,16 @@ public class Movie extends CommonMedia {
         this.filePath = filePath;
     }
 
-    public MovieMetadata getMetadata() {
+    public MovieMetadata getOriginalMetadata() {
+        //merge with overrides to get the metadata that is overriden by the user instead of fetched data.
         return metadata;
+    }
+
+    public MovieMetadata getMetadata() {
+       if(this.overrides == null) return this.metadata;
+        MovieMetadata clone = this.metadata.clone();
+        clone.merge(this.overrides);
+        return clone;
     }
 
     public void setMetadata(MovieMetadata metadata) {

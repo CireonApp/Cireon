@@ -151,10 +151,8 @@ public class MovieManager {
         );
         if (LocalDateTime.now().isBefore(
                 lastUpdated.plusDays(30))) {
-            ServerApplication.LOGGER.info("Metadata for " + movie.getMetadata().getTitle() + " is up to date, skipping update.");
             return;
         }
-
         Databases.movieRepository.remove(movie);
     }
 
