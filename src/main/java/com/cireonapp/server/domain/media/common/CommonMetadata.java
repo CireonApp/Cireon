@@ -12,13 +12,13 @@ public class CommonMetadata {
     private String originalTitle;
     private String description;
     private Artwork artworks;
-    private int runtime;
+    private Integer runtime;
     private Set<Genres> genres = new HashSet<>();
     private Set<String> alternativeTitles = new HashSet<>();
-    private boolean adult;
+    private Boolean adult;
     private String tagline;
-    private long lastUpdated;
-    private long releaseDateTimestamp;
+    private Long lastUpdated;
+    private Long releaseDateTimestamp;
 
     public CommonMetadata(int id, String title, String originalTitle, String description, Artwork artworks, int runtime, Set<Genres> genres, Set<String> alternativeTitles, boolean adult, String tagline, long lastUpdated) {
         this.id = id;
