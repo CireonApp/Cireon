@@ -26,7 +26,6 @@ public class UserManager {
         if (user == null || user.getUsername() == null || user.getUsername().isBlank()) {
             return false;
         }
-
         if (!atLeastOneAdmin()) {
             //first user must be set to administrator
             user.setAdministrator(true);
@@ -37,7 +36,6 @@ public class UserManager {
     }
 
     private static boolean atLeastOneAdmin() {
-
         return !Databases.userRepository.find(where("administrator").eq(true)).isEmpty();
     }
 
@@ -66,39 +64,13 @@ public class UserManager {
 
         User existingUser = existingUserOpt.get();
 
-        // Dynamically merge all non-null/non-empty fields from updateInfo
-        mergeFields(existingUser, updateInfo);
+        // Dynamically merge all non-null fields from updateInfo
+        // will also merge non-null user settings.
+        existingUser.merge(updateInfo);
 
         // Update in database
         Databases.userRepository.update(existingUser);
         return true;
-    }
-
-    /**
-     * Merges non-null/non-empty fields from source to target using reflection.
-     * Skips the 'username' field to prevent accidental changes.
-     * Special handling for 'password' field (applies encryption).
-     */
-    private static void mergeFields(User target, User source) {
-
-        if (source.getPassword() != null && !source.getPassword().isBlank()) {
-            target.setPassword(
-                    EncryptionHelper.encryptPassword_argon2(source.getPassword())
-            );
-        }
-
-        if (source.getDisplayName() != null && !source.getDisplayName().isBlank()) {
-            target.setDisplayName(source.getDisplayName());
-        }
-
-        if (source.getLastUseDate() != null && !source.getLastUseDate().isBlank()) {
-            target.setLastUseDate(source.getLastUseDate());
-        }
-
-        if (source.getSettings() != null) {
-            target.setSettings(source.getSettings());
-        }
-
     }
 
     /**

@@ -1,29 +1,36 @@
 package com.cireonapp.server.domain.user;
 
+import com.cireonapp.server.util.EncryptionHelper;
 import com.cireonapp.server.util.TimeHelper;
 import org.dizitart.no2.index.IndexType;
 import org.dizitart.no2.repository.annotations.Entity;
 import org.dizitart.no2.repository.annotations.Id;
 import org.dizitart.no2.repository.annotations.Index;
 
+import java.util.Objects;
+
 
 @Entity(value = "users", indices = {
         @Index(fields = "username"),
         @Index(fields = "displayName", type = IndexType.NON_UNIQUE),
         @Index(fields = "password", type = IndexType.NON_UNIQUE),
-        @Index(fields = "administrator", type = IndexType.NON_UNIQUE)
+        @Index(fields = "administrator", type = IndexType.NON_UNIQUE),
+        @Index(fields = "allowAdultContent", type = IndexType.NON_UNIQUE),
+        @Index(fields = "creationDate", type = IndexType.NON_UNIQUE),
+        @Index(fields = "lastUseDate", type = IndexType.NON_UNIQUE)
 })
 public class User {
     @Id
     private String username;
     private String password;
     private String displayName;
-    private boolean administrator;
+    private Boolean administrator;
     private UserSettings settings;
     private String creationDate;
     private String lastUseDate;
+    private Boolean allowAdultContent;
 
-    public User(String username, String password, String displayName) {
+    public User(String username, String password, String displayName, Boolean allowAdultContent) {
         this.username = username;
         this.password = password;
         if (displayName == null || displayName.isBlank()) {
@@ -31,7 +38,8 @@ public class User {
         } else {
             this.displayName = displayName;
         }
-        this.administrator = false;
+
+        this.allowAdultContent = allowAdultContent;
         this.settings = UserSettings.getDefault();
         this.creationDate = TimeHelper.getCurrentTimeISO();
         this.lastUseDate = TimeHelper.getCurrentTimeISO();
@@ -64,6 +72,28 @@ public class User {
         this.displayName = displayName;
     }
 
+    /**
+     * Merge user data with new data. passwords will be hashed in this method.
+     * if a field is null it will not be merged and the old value will be kept.
+     * Will merge user settings. To only change settings just pass newData with only the settings changed.
+     *
+     * @param newData new user data.
+     */
+    public void merge(User newData) {
+        if (newData == null) return;
+        if (newData.displayName != null)
+            this.displayName = newData.displayName;
+        if (newData.password != null)
+            this.password = EncryptionHelper.encryptPassword_argon2(this.password);
+        if (newData.administrator != null)
+            this.administrator = newData.administrator;
+        if (newData.allowAdultContent != null)
+            this.allowAdultContent = newData.allowAdultContent;
+        if (newData.settings != null)
+            newData.settings.merge(this.settings);
+
+    }
+
 
     @Override
     public String toString() {
@@ -82,12 +112,16 @@ public class User {
         this.settings = settings;
     }
 
-    public boolean isAdministrator() {
+    public Boolean isAdministrator() {
         return administrator;
     }
 
-    public void setAdministrator(boolean administrator) {
+    public void setAdministrator(Boolean administrator) {
         this.administrator = administrator;
+        if (administrator == true) {
+            // Restricting content from admins is awkward.
+            this.allowAdultContent = false;
+        }
     }
 
     public String getCreationDate() {
@@ -104,5 +138,13 @@ public class User {
 
     public void setLastUseDate(String lastUseDate) {
         this.lastUseDate = lastUseDate;
+    }
+
+    public Boolean getAllowAdultContent() {
+        return Objects.requireNonNullElse(allowAdultContent, true);
+    }
+
+    public void setAllowAdultContent(Boolean allowAdultContent) {
+        this.allowAdultContent = allowAdultContent;
     }
 }

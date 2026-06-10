@@ -20,10 +20,10 @@ public class UserSettings {
     public UserSettings() {
     }
 
-    public UserSettings(WebThemes webTheme) {
-        this.webTheme = webTheme;
+    public void merge(UserSettings newData) {
+        if (newData.webTheme != null)
+            this.webTheme = newData.webTheme;
     }
-
 
     public WebThemes getWebTheme() {
         return webTheme;
