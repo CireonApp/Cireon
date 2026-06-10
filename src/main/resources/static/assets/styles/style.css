@@ -320,9 +320,6 @@
   .z-50 {
     z-index: 50;
   }
-  .z-100 {
-    z-index: 100;
-  }
   .z-1000 {
     z-index: 1000;
   }
@@ -331,6 +328,9 @@
   }
   .mt-2 {
     margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
   }
   .mb-1 {
     margin-bottom: calc(var(--spacing) * 1);
@@ -400,6 +400,9 @@
   }
   .w-28 {
     width: calc(var(--spacing) * 28);
+  }
+  .w-\[95\%\] {
+    width: 95%;
   }
   .w-fit {
     width: fit-content;
@@ -802,6 +805,9 @@
   .p-6 {
     padding: calc(var(--spacing) * 6);
   }
+  .p-8 {
+    padding: calc(var(--spacing) * 8);
+  }
   .px-2 {
     padding-inline: calc(var(--spacing) * 2);
   }
@@ -813,6 +819,9 @@
   }
   .px-4 {
     padding-inline: calc(var(--spacing) * 4);
+  }
+  .px-5 {
+    padding-inline: calc(var(--spacing) * 5);
   }
   .px-8 {
     padding-inline: calc(var(--spacing) * 8);
@@ -861,6 +870,9 @@
   }
   .font-material-sharp {
     font-family: var(--font-material-sharp);
+  }
+  .font-mono {
+    font-family: var(--font-mono);
   }
   .text-2xl {
     font-size: var(--text-2xl);
@@ -1121,17 +1133,6 @@
       max-height: calc(var(--spacing) * 56);
     }
   }
-  .group-focus-within\:max-w-44 {
-    &:is(:where(.group):focus-within *) {
-      max-width: calc(var(--spacing) * 44);
-    }
-  }
-  .group-focus-within\:translate-x-0 {
-    &:is(:where(.group):focus-within *) {
-      --tw-translate-x: calc(var(--spacing) * 0);
-      translate: var(--tw-translate-x) var(--tw-translate-y);
-    }
-  }
   .group-focus-within\:translate-y-0 {
     &:is(:where(.group):focus-within *) {
       --tw-translate-y: calc(var(--spacing) * 0);
@@ -1145,6 +1146,27 @@
   }
   .group-focus-within\:opacity-100 {
     &:is(:where(.group):focus-within *) {
+      opacity: 100%;
+    }
+  }
+  .group-focus-within\/vol\:pointer-events-auto {
+    &:is(:where(.group\/vol):focus-within *) {
+      pointer-events: auto;
+    }
+  }
+  .group-focus-within\/vol\:max-w-44 {
+    &:is(:where(.group\/vol):focus-within *) {
+      max-width: calc(var(--spacing) * 44);
+    }
+  }
+  .group-focus-within\/vol\:translate-x-0 {
+    &:is(:where(.group\/vol):focus-within *) {
+      --tw-translate-x: calc(var(--spacing) * 0);
+      translate: var(--tw-translate-x) var(--tw-translate-y);
+    }
+  }
+  .group-focus-within\/vol\:opacity-100 {
+    &:is(:where(.group\/vol):focus-within *) {
       opacity: 100%;
     }
   }
@@ -1166,21 +1188,6 @@
     &:is(:where(.group):hover *) {
       @media (hover: hover) {
         max-height: calc(var(--spacing) * 56);
-      }
-    }
-  }
-  .group-hover\:max-w-44 {
-    &:is(:where(.group):hover *) {
-      @media (hover: hover) {
-        max-width: calc(var(--spacing) * 44);
-      }
-    }
-  }
-  .group-hover\:translate-x-0 {
-    &:is(:where(.group):hover *) {
-      @media (hover: hover) {
-        --tw-translate-x: calc(var(--spacing) * 0);
-        translate: var(--tw-translate-x) var(--tw-translate-y);
       }
     }
   }
@@ -1225,6 +1232,35 @@
   }
   .group-hover\:opacity-100 {
     &:is(:where(.group):hover *) {
+      @media (hover: hover) {
+        opacity: 100%;
+      }
+    }
+  }
+  .group-hover\/vol\:pointer-events-auto {
+    &:is(:where(.group\/vol):hover *) {
+      @media (hover: hover) {
+        pointer-events: auto;
+      }
+    }
+  }
+  .group-hover\/vol\:max-w-44 {
+    &:is(:where(.group\/vol):hover *) {
+      @media (hover: hover) {
+        max-width: calc(var(--spacing) * 44);
+      }
+    }
+  }
+  .group-hover\/vol\:translate-x-0 {
+    &:is(:where(.group\/vol):hover *) {
+      @media (hover: hover) {
+        --tw-translate-x: calc(var(--spacing) * 0);
+        translate: var(--tw-translate-x) var(--tw-translate-y);
+      }
+    }
+  }
+  .group-hover\/vol\:opacity-100 {
+    &:is(:where(.group\/vol):hover *) {
       @media (hover: hover) {
         opacity: 100%;
       }
@@ -1629,6 +1665,11 @@
       width: calc(1 / 2 * 100%);
     }
   }
+  .md\:w-2\/3 {
+    @media (width >= 48rem) {
+      width: calc(2 / 3 * 100%);
+    }
+  }
   .md\:w-auto {
     @media (width >= 48rem) {
       width: auto;
@@ -1762,6 +1803,11 @@
   .lg\:justify-between {
     @media (width >= 64rem) {
       justify-content: space-between;
+    }
+  }
+  .xl\:w-1\/2 {
+    @media (width >= 80rem) {
+      width: calc(1 / 2 * 100%);
     }
   }
   .xl\:px-\[16\%\] {
