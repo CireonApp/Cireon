@@ -2,7 +2,12 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/headLinks::headLinks}"></th:block>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const MEDIA_HASH = /*[[${media.hash}]]*/ '';
+        console.log('MEDIA_HASH loaded:', MEDIA_HASH);
+        /*]]>*/
+    </script>
     <link rel="stylesheet" th:href="@{/assets/styles/style.css}"/>
     <meta charset="UTF-8">
     <script th:src="@{/assets/scripts/global.js}"></script>
@@ -68,6 +73,22 @@
             border-radius: 9999px;
             background: transparent;
         }
+
+        /* Loading spinner styles */
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
     <script defer>
         let alreadyUnmuted = false;
@@ -98,27 +119,108 @@
             const fullscreenBtn = document.getElementById("fullscreenBtn");
             const playerContainer = document.getElementById("playerContainer");
             const controlsOverlay = document.getElementById("controlsOverlay");
+            const currentTimeElement = document.getElementById("current-time-text");
+            const durationTextElement = document.getElementById("duration-text");
+            const middleArea = document.getElementById("middleArea");
+            const pictureInPictureButton = document.getElementById("pictureInPictureBtn");
+            const loadingSpinner = document.getElementById("loading-spinner")
 
             if (!video || !seekBar || !playBtn || !volumeBtn || !volumeSlider || !fullscreenBtn || !playerContainer || !controlsOverlay) {
                 console.error('Required player elements not found');
                 return;
             }
 
-            // ── Controls visibility (mirrors Next.js showControls logic) ──────
+            function showLoadingSpinner() {
+                loadingSpinner.style.display = "flex"
+            }
+
+            function hideLoadingSpinner() {
+                loadingSpinner.style.display = 'none';
+            }
+
+            video.addEventListener('loadstart', showLoadingSpinner);
+            video.addEventListener('canplaythrough', hideLoadingSpinner);
+
+            video.addEventListener('waiting', showLoadingSpinner);
+            video.addEventListener('playing', hideLoadingSpinner);
+
+
+            // ── FFmpeg On-The-Fly State Management ────────────────────────────
+            let REAL_DURATION = 0;
+            let currentStartOffset = 0; // Tracks how many seconds into the video we skipped
+            let isDragging = false;
+
+            function formatSeconds(totalSeconds) {
+                if (isNaN(totalSeconds) || !isFinite(totalSeconds)) return "00:00";
+                const hours = Math.floor(totalSeconds / 3600);
+                const minutes = Math.floor((totalSeconds % 3600) / 60);
+                const seconds = Math.floor(totalSeconds % 60);
+
+                const paddedM = String(minutes).padStart(2, '0');
+                const paddedS = String(seconds).padStart(2, '0');
+                if (hours === 0) return `${paddedM}:${paddedS}`;
+
+                const paddedH = String(hours).padStart(2, '0');
+                return `${paddedH}:${paddedM}:${paddedS}`;
+            }
+
+            // 1. Fetch the true duration from the backend header (HEAD request for headers only)
+            async function fetchTrueDuration() {
+                try {
+                    // CALL THE NEW LIGHTWEIGHT ENDPOINT
+                    const response = await fetch(`/api/streaming/info/${MEDIA_HASH}`);
+                    const data = await response.json();
+
+                    if (data.duration) {
+                        REAL_DURATION = parseInt(data.duration, 10);
+                        seekBar.max = REAL_DURATION;
+                        durationTextElement.textContent = formatSeconds(REAL_DURATION);
+                    }
+
+                    // Now that the duration is loaded, set the video source
+                    video.src = `/api/streaming/video/${MEDIA_HASH}`;
+                    video.play();
+                    playBtn.textContent = "pause";
+                } catch (e) {
+                    console.error("Failed to fetch info:", e);
+                    video.src = `/api/streaming/video/${MEDIA_HASH}`;
+                    video.play();
+                }
+            }
+
+            fetchTrueDuration();
+
+            // 2. Server-Side Seeking Mechanism
+            function seekToTime(targetSecond) {
+                if (targetSecond < 0) targetSecond = 0;
+                if (REAL_DURATION && targetSecond > REAL_DURATION) targetSecond = REAL_DURATION;
+
+                currentStartOffset = targetSecond;
+
+                // Add the start parameter to command FFmpeg to skip instantly
+                video.src = `/api/streaming/video/${MEDIA_HASH}?start=${Math.floor(targetSecond)}`;
+                video.play();
+                playBtn.textContent = "pause";
+            }
+
+            // ── Controls visibility ───────────────────────────────────────────
             let isPlaying = false;
             let fadeTimeout = null;
+            let controlsShown = true;
 
             function showControls() {
                 controlsOverlay.classList.remove("opacity-0", "pointer-events-none");
                 controlsOverlay.classList.add("opacity-100");
+                controlsShown = true;
                 playerContainer.style.cursor = "default";
 
-                if (!isPlaying) return; // paused → stay visible, no timer
+                if (!isPlaying) return;
 
                 clearTimeout(fadeTimeout);
                 fadeTimeout = setTimeout(() => {
                     controlsOverlay.classList.remove("opacity-100");
                     controlsOverlay.classList.add("opacity-0", "pointer-events-none");
+                    controlsShown = false;
                     playerContainer.style.cursor = "none";
                 }, 3000);
             }
@@ -147,6 +249,13 @@
             }
 
             playBtn.addEventListener("click", togglePlay);
+            middleArea.addEventListener("click", () => {
+                    if (controlsShown) {
+                        togglePlay()
+                    }
+                }
+            )
+            ;
 
             // ── Volume ────────────────────────────────────────────────────────
             let lastNonZeroVolume = video.volume > 0 ? video.volume : 0.5;
@@ -173,6 +282,7 @@
                     video.muted = true;
                 }
                 updateVolumeIcon();
+                updateVolumeSliderVisuals();
             });
 
             volumeSlider.addEventListener("input", () => {
@@ -198,91 +308,88 @@
             updateVolumeSliderVisuals();
 
             // ── Seek bar ──────────────────────────────────────────────────────
-            let isDragging = false;
-
             function getBufferedPercent() {
-                if (!video.duration || video.buffered.length === 0) return 0;
+                if (!video.duration || video.buffered.length === 0 || !REAL_DURATION) return 0;
+                let maxBuffered = 0;
                 for (let i = 0; i < video.buffered.length; i++) {
-                    if (video.currentTime >= video.buffered.start(i) && video.currentTime <= video.buffered.end(i))
-                        return Math.min((video.buffered.end(i) / video.duration) * 100, 100);
+                    if (video.buffered.end(i) > maxBuffered) maxBuffered = video.buffered.end(i);
                 }
-                return Math.min((video.buffered.end(video.buffered.length - 1) / video.duration) * 100, 100);
+                // Add the offset to show absolute buffer position on the full timeline
+                const absoluteBuffered = currentStartOffset + maxBuffered;
+                return Math.min((absoluteBuffered / REAL_DURATION) * 100, 100);
             }
 
             function updateSeekBarVisuals() {
-                const duration = Number(video.duration);
-                if (!duration || Number.isNaN(duration)) {
-                    seekBar.style.setProperty("--played", "0%");
-                    seekBar.style.setProperty("--buffered", "0%");
-                    return;
-                }
-                const played = Math.min((Number(seekBar.value) / duration) * 100, 100);
+                if (!REAL_DURATION) return;
+                const played = Math.min((Number(seekBar.value) / REAL_DURATION) * 100, 100);
                 seekBar.style.setProperty("--played", `${played}%`);
                 seekBar.style.setProperty("--buffered", `${Math.max(getBufferedPercent(), played)}%`);
             }
 
-            function formatSeconds(totalSeconds) {
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = totalSeconds % 60;
-
-                // Pad minutes and seconds with a leading zero
-                const paddedM = String(minutes).padStart(2, '0');
-                const paddedS = String(seconds).padStart(2, '0');
-
-                // If there are no hours, only return MM:SS
-                if (hours === 0) {
-                    return `${paddedM}:${paddedS}`;
-                }
-
-                // Otherwise, pad the hours and return HH:MM:SS
-                const paddedH = String(hours).padStart(2, '0');
-                return `${paddedH}:${paddedM}:${paddedS}`;
-            }
-
-            const currentTimeElement = document.getElementById("current-time-text");
-            const durationTextElement = document.getElementById("duration-text");
-
             video.addEventListener("loadedmetadata", () => {
-                seekBar.max = video.duration;
-                document.getElementById("controlsOverlay").style.display = "flex";
-                durationTextElement.textContent = formatSeconds(parseInt(video.duration.toFixed(0)));
+                controlsOverlay.style.display = "flex";
+                // Only override if the fetch failed and native duration works (rare for live MP4 streams)
+                if (!REAL_DURATION && isFinite(video.duration) && video.duration > 0) {
+                    REAL_DURATION = video.duration;
+                    seekBar.max = REAL_DURATION;
+                    durationTextElement.textContent = formatSeconds(REAL_DURATION);
+                }
                 updateSeekBarVisuals();
             });
+
             video.addEventListener("timeupdate", () => {
-                currentTimeElement.textContent = formatSeconds(parseInt(video.currentTime.toFixed(0)));
                 if (isDragging) return;
-                seekBar.value = video.currentTime;
+
+                // The visual time is the actual live playback time PLUS where we started
+                const visualCurrentTime = video.currentTime + currentStartOffset;
+                currentTimeElement.textContent = formatSeconds(visualCurrentTime);
+                seekBar.value = visualCurrentTime;
+
                 updateSeekBarVisuals();
             });
+
             video.addEventListener("progress", updateSeekBarVisuals);
-            seekBar.addEventListener("mousedown", () => {
-                isDragging = true;
-            });
-            document.addEventListener("mouseup", () => {
-                isDragging = false;
-            });
+
+            // While dragging, just update the text and visual slider immediately
             seekBar.addEventListener("input", () => {
-                video.currentTime = seekBar.value;
+                isDragging = true;
+                currentTimeElement.textContent = formatSeconds(parseFloat(seekBar.value));
                 updateSeekBarVisuals();
             });
-            updateSeekBarVisuals();
+
+            // When the mouse is released, trigger the server-side seek
+            seekBar.addEventListener("change", () => {
+                isDragging = false;
+                seekToTime(parseFloat(seekBar.value));
+            });
 
             // ── Fullscreen ────────────────────────────────────────────────────
             async function toggleFullscreen() {
                 if (!document.fullscreenElement) {
                     playerContainer.requestFullscreen();
-
                 } else {
                     document.exitFullscreen();
                 }
             }
 
             fullscreenBtn.addEventListener("click", toggleFullscreen);
+            middleArea.addEventListener("dblclick", toggleFullscreen);
 
             document.addEventListener("fullscreenchange", () => {
                 fullscreenBtn.textContent = document.fullscreenElement ? "fullscreen_exit" : "fullscreen";
             });
+
+            function togglePictureInPicture() {
+                if (document.pictureInPictureElement) {
+                    document.exitPictureInPicture();
+                    pictureInPictureButton.textContent = "pip";
+                } else {
+                    video.requestPictureInPicture();
+                    pictureInPictureButton.textContent = "pip_exit";
+                }
+            }
+
+            pictureInPictureButton.addEventListener("click", togglePictureInPicture);
 
             // ── Keyboard shortcuts ────────────────────────────────────────────
             document.addEventListener("keydown", e => {
@@ -298,77 +405,69 @@
                 }
                 if (e.code === "ArrowRight") {
                     e.preventDefault();
-                    video.currentTime = Math.min(video.currentTime + 10, video.duration);
+                    seekToTime((video.currentTime + currentStartOffset) + 10);
                     return;
                 }
                 if (e.code === "ArrowLeft") {
                     e.preventDefault();
-                    video.currentTime = Math.max(video.currentTime - 10, 0);
+                    seekToTime(Math.max((video.currentTime + currentStartOffset) - 10, 0));
                 }
             });
-
-            const middleArea = document.getElementById("middleArea");
-            middleArea.addEventListener("click",togglePlay)
-            middleArea.addEventListener("dblclick",toggleFullscreen)
-
-            function togglePictureInPicture() {
-                if (document.pictureInPictureElement) {
-                    document.exitPictureInPicture();
-                    pictureInPictureButton.textContent = "pip"
-                } else {
-                    video.requestPictureInPicture();
-                    pictureInPictureButton.textContent = "pip_exit"
-                }
-            }
-
-            const pictureInPictureButton = document.getElementById("pictureInPictureBtn");
-            pictureInPictureButton.addEventListener("click", togglePictureInPicture)
         });
-
     </script>
 </head>
 <body class="m-0 h-dvh overflow-hidden">
-<div id="playerContainer" class="fixed inset-0 bg-black overflow-hidden">
+<div id="playerContainer" class="fixed inset-0 bg-black overflow-hidden group">
 
     <video id="video" onerror="handleOnError()" class="absolute inset-0 w-full h-full object-contain"
-           th:src="|/api/streaming/video/${media.hash}|" autoplay muted
+           autoplay muted
            onplay="handleOnPlay(this)"></video>
 
-    <!-- Single controls overlay — fades in/out like Next.js controlsVisible -->
     <div id="controlsOverlay"
          style="display: none"
          class="absolute inset-0 z-10 flex-col justify-between transition-opacity duration-500 opacity-100">
 
-        <!-- Title bar -->
         <div class="bg-linear-to-b from-black to-transparent p-4 text-white">
             <p th:text="${media.title}"></p>
         </div>
 
-        <!-- Click-to-play middle area (mirrors Next.js onClick={togglePlay} / onDoubleClick={toggleFullscreen}) -->
-        <div id="middleArea" class="flex-1"></div>
-
-        <!-- Bottom controls bar -->
-        <div class="bg-linear-to-t from-black to-transparent p-4 flex flex-col gap-3 text-white">
-            <div class="w-full gap-2 flex flex-col">
-                <div class="w-full flex flex-row items-center justify-between">
-                    <p id="current-time-text"></p>
-                    <p id="duration-text"></p>
+        <div id="middleArea" class="flex-1 cursor-pointer flex flex-row items-center justify-center">
+            <div style="display: none" id="loading-spinner" class="z-50 absolute inset-0">
+                <img class="object-cover brightness-50 absolute inset-0 w-full h-full"
+                     th:src="|/api/artwork?type=background&id=${media.hash}|" alt="">
+                <div class="relative gap-3 flex flex-col justify-center items-center w-full h-full">
+                    <img class="xl:w-1/2 w-[95%] md:w-2/3"
+                         th:src="|/api/artwork?type=logo&id=${media.hash}|" alt="">
+                    <div class="relative flex flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-background-modal/95 p-8 shadow-2xl backdrop-blur light:bg-background-modal-light">
+                        <div class="spinner"></div>
+                        <p class="text-white text-lg font-medium">Loading...</p>
+                    </div>
                 </div>
-                <input type="range" id="seekBar" min="0" max="0" value="0" class="player-range w-full cursor-pointer">
             </div>
-            <div class="flex items-center justify-between">
+        </div>
+
+        <div id="bottom-controls" class="bg-linear-to-t from-black to-transparent p-4 flex flex-col gap-3 text-white">
+            <div class="w-full gap-2 flex flex-col">
+                <div class="w-full flex flex-row items-center justify-between font-mono text-sm">
+                    <p id="current-time-text">00:00</p>
+                    <p id="duration-text">00:00</p>
+                </div>
+                <input type="range" id="seekBar" min="0" max="0" step="0.1" value="0"
+                       class="player-range w-full cursor-pointer">
+            </div>
+            <div class="flex items-center justify-between mt-2">
                 <div class="flex items-center gap-2">
                     <button id="playBtn"
                             class="font-material-sharp text-3xl hover:bg-white/20 active:bg-white/30 transition-all p-2 px-3 cursor-pointer rounded-full aspect-square border border-white/10 bg-zinc-900/80">
                         pause
                     </button>
-                    <div id="volumeControl" class="group relative flex items-center">
+                    <div id="volumeControl" class="group/vol relative flex items-center">
                         <button id="volumeBtn"
                                 class="font-material-sharp text-3xl hover:bg-white/20 active:bg-white/30 transition-all p-2 px-3 cursor-pointer rounded-full aspect-square border border-white/10 bg-zinc-900/80">
                             volume_up
                         </button>
                         <div id="volumePanel"
-                             class="absolute left-full top-1/2 z-20 flex -translate-y-1/2 overflow-hidden max-w-0 pl-2 opacity-0 -translate-x-1 pointer-events-none transition-all duration-300 group-hover:max-w-44 group-hover:opacity-100 group-hover:translate-x-0 group-hover:pointer-events-auto group-focus-within:max-w-44 group-focus-within:opacity-100 group-focus-within:translate-x-0 group-focus-within:pointer-events-auto">
+                             class="absolute left-full top-1/2 z-20 flex -translate-y-1/2 overflow-hidden max-w-0 pl-2 opacity-0 -translate-x-1 pointer-events-none transition-all duration-300 group-hover/vol:max-w-44 group-hover/vol:opacity-100 group-hover/vol:translate-x-0 group-hover/vol:pointer-events-auto group-focus-within/vol:max-w-44 group-focus-within/vol:opacity-100 group-focus-within/vol:translate-x-0 group-focus-within/vol:pointer-events-auto">
                             <div class="rounded-lg border border-white/10 bg-background-modal/90 px-3 py-2 shadow-xl backdrop-blur">
                                 <label for="volumeSlider" class="sr-only">Volume</label>
                                 <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="0.5"
@@ -377,7 +476,7 @@
                         </div>
                     </div>
                 </div>
-                <div>
+                <div class="flex items-center gap-2">
                     <button id="pictureInPictureBtn"
                             class="font-material-sharp text-3xl hover:bg-white/20 active:bg-white/30 transition-all p-2 px-3 cursor-pointer rounded-full aspect-square border border-white/10 bg-zinc-900/80">
                         pip
@@ -391,16 +490,16 @@
         </div>
     </div>
 
-    <!-- Error screen overlay -->
-    <div style="display: none" id="error-screen" class="z-100 absolute inset-0">
+    <div style="display: none" id="error-screen" class="z-50 absolute inset-0">
         <div class="relative flex flex-row justify-center items-center w-full h-full">
             <img class="object-cover brightness-50 absolute inset-0 w-full h-full"
                  th:src="|/api/artwork?type=background&id=${media.hash}|" alt="">
             <div class="relative flex w-full max-w-xl flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-background-modal/95 p-6 shadow-2xl backdrop-blur light:bg-background-modal-light md:p-8">
-                <p class="text-2xl" th:text="|Oops, There was an error playing this ${media.type.singular}!|"></p>
+                <p class="text-2xl text-white text-center"
+                   th:text="|Oops, There was an error playing this ${media.type.singular}!|"></p>
                 <p class="text-xl text-zinc-400">You can try to download it instead.</p>
                 <a th:href="|/api/streaming/video/${media.hash}|"
-                   class="px-3 cursor-pointer rounded-lg bg-primary py-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400">Download</a>
+                   class="px-5 mt-4 cursor-pointer rounded-lg bg-primary py-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400">Download</a>
             </div>
         </div>
     </div>
