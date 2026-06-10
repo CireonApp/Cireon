@@ -80,7 +80,6 @@ public class UserController {
         Optional<User> authenticatedUser = CookieHelper.getUserFromSessionCookie(request);
 
         boolean isAdmin = authenticatedUser.isPresent() && authenticatedUser.get().isAdministrator();
-        ServerApplication.LOGGER.warn("user that looged in is admin: {}",isAdmin);
 
         if (!isAdmin) {
             if (!ConfigManager.get().isAllowUserCreation())
@@ -88,7 +87,7 @@ public class UserController {
             if (userCount >= maxUsers)
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body(new ErrorResponseDto("Maximum number of users reached."));
         }
-        User newUser = new User(user.username, user.password, user.displayName);
+        User newUser = new User(user.username, user.password, user.displayName, user.allowAdultContent);
 
         boolean success = UserManager.create(newUser);
         if (success)
