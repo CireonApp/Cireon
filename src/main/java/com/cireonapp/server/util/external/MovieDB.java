@@ -36,10 +36,10 @@ public class MovieDB {
         return tmdbApi.getMovies().getDetails(movieId, language, MovieAppendToResponse.IMAGES,MovieAppendToResponse.ALTERNATIVE_TITLES);
     }
 
-    public static String saveImageSafe(String path, int id, String type) {
+    public static String saveImageSafe(String path, String id, String type) {
         try {
             String ext = path.substring(path.lastIndexOf('.') + 1);
-            return saveImage(IMAGE_BASE_URL + path, String.valueOf(id), type, ext);
+            return saveImage(IMAGE_BASE_URL + path, id, type, ext);
         } catch (Exception e) {
             return null;
         }
@@ -58,19 +58,21 @@ public class MovieDB {
         var result = search.getResults().getFirst();
 
         MovieMetadata metadata = new MovieMetadata();
-        metadata.setId(result.getId());
         metadata.setTitle(result.getTitle());
         metadata.setOriginalTitle(result.getOriginalTitle());
         metadata.setDescription(result.getOverview());
-        metadata.setAdult(result.getAdult());
+
         metadata.setReleaseDate(parseDate(result.getReleaseDate()));
         metadata.setReleaseDateTimestamp(convertToTimestamp(metadata.getReleaseDate()));
 
 
         MovieDb details = attachDetails_tmdb(metadata, result.getId(), source);
 
+        metadata.setId(details.getImdbID());
+        metadata.setAdult(details.getAdult());
 
-        attachImages_tmdb(metadata, result.getId(), details.getImages());
+
+        attachImages_tmdb(metadata, details.getId(), details.getImages());
 
 
         metadata.setLastUpdated(Timestamp.valueOf(LocalDateTime.now()).getTime());
@@ -81,15 +83,15 @@ public class MovieDB {
         Artwork art = new Artwork();
 
         if (!images.getPosters().isEmpty()) {
-            art.setPoster(saveImageSafe(images.getPosters().getFirst().getFilePath(), movieId, "poster"));
+            art.setPoster(saveImageSafe(images.getPosters().getFirst().getFilePath(), metadata.getId(), "poster"));
         }
 
         if (!images.getLogos().isEmpty()) {
-            art.setLogo(saveImageSafe(images.getLogos().getFirst().getFilePath(), movieId, "logo"));
+            art.setLogo(saveImageSafe(images.getLogos().getFirst().getFilePath(), metadata.getId(), "logo"));
         }
 
         if (!images.getBackdrops().isEmpty()) {
-            art.setBackground(saveImageSafe(images.getBackdrops().getFirst().getFilePath(), movieId, "background"));
+            art.setBackground(saveImageSafe(images.getBackdrops().getFirst().getFilePath(), metadata.getId(), "background"));
         }
 
         metadata.setArtworks(art);
