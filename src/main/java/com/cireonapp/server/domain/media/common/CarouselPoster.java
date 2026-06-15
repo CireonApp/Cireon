@@ -2,8 +2,6 @@ package com.cireonapp.server.domain.media.common;
 
 import com.cireonapp.server.domain.media.movie.Movie;
 
-import java.time.LocalDateTime;
-
 public class CarouselPoster {
     private String hash;
     private String title;
@@ -64,7 +62,7 @@ public class CarouselPoster {
     public static CarouselPoster createCarouselPosterFromMovie(Movie movie) {
         CarouselPoster poster = new CarouselPoster();
         poster.setAdult(movie.getMetadata().isAdult());
-        poster.setHash(movie.getHash());
+        poster.setHash(movie.getId());
         poster.setCreationDate(movie.getCreated());
         poster.setReleaseDate(movie.getMetadata().getReleaseDate());
         poster.setUpdateDate(movie.getLastUpdated());
