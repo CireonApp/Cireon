@@ -4,6 +4,7 @@ import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.config.Config;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.source.Source;
+import com.cireonapp.server.domain.media.watchProgress.UserVideoWatchProgress;
 import com.cireonapp.server.domain.session.Session;
 import com.cireonapp.server.domain.user.User;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -25,12 +26,17 @@ import static com.cireonapp.server.initializer.AppPath.APP_DIR;
 @Configuration
 public class Databases implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
+    private static final MVStoreModule storeModule = MVStoreModule.withConfig()
+            .filePath(APP_DIR.resolve("data/database").toString())
+            .build();
+
     private static Nitrite database;
-    public static ObjectRepository<Config> configRepository;
-    public static ObjectRepository<User> userRepository;
-    public static ObjectRepository<Session> sessionRepository;
-    public static ObjectRepository<Source> sourceRepository;
-    public static ObjectRepository<Movie> movieRepository;
+    private static ObjectRepository<Config> configRepository;
+    private static ObjectRepository<User> userRepository;
+    private static ObjectRepository<Session> sessionRepository;
+    private static ObjectRepository<Source> sourceRepository;
+    private static ObjectRepository<Movie> movieRepository;
+    public static ObjectRepository<UserVideoWatchProgress> watchProgressRepository;
 
     /**
      * initializing the database will set this to false to prevent double logging.
@@ -39,7 +45,7 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
 
 
     public static synchronized void bootstrap() throws IOException {
-        if (logInitialized){
+        if (logInitialized) {
             ServerApplication.LOGGER.info("Initializing database...");
             logInitialized = false;
         }
@@ -48,24 +54,7 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
             return;
         }
 
-        MVStoreModule storeModule = MVStoreModule.withConfig()
-                .filePath(APP_DIR.resolve("data/database").toString())
-                .build();
-
-        database = Nitrite.builder()
-                .loadModule(storeModule)
-                .loadModule(new JacksonMapperModule(new JavaTimeModule()))
-                .openOrCreate();
-
-        userRepository = database.getRepository(User.class, "users");
-        configRepository = database.getRepository(Config.class, "config");
-        sessionRepository = database.getRepository(Session.class, "sessions");
-        sourceRepository = database.getRepository(Source.class, "sources");
-        movieRepository = database.getRepository(Movie.class, "movies");
-
-        if (configRepository.find().firstOrNull() == null) {
-            configRepository.insert(new Config());
-        }
+        openDatabase();
     }
 
     @Bean
@@ -87,5 +76,70 @@ public class Databases implements ApplicationContextInitializer<ConfigurableAppl
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+
+    private static void openDatabase() {
+        database = Nitrite.builder()
+                .loadModule(storeModule)
+                .loadModule(new JacksonMapperModule(new JavaTimeModule()))
+                .openOrCreate();
+
+        userRepository = database.getRepository(User.class, "users");
+        configRepository = database.getRepository(Config.class, "config");
+        sessionRepository = database.getRepository(Session.class, "sessions");
+        sourceRepository = database.getRepository(Source.class, "sources");
+        movieRepository = database.getRepository(Movie.class, "movies");
+
+        if (configRepository.find().firstOrNull() == null) {
+            configRepository.insert(new Config());
+        }
+    }
+
+    private static boolean isRepositoryClosed(ObjectRepository<?> repo) {
+        return repo == null || !repo.isOpen();
+    }
+
+
+    public static ObjectRepository<Config> getConfigRepository() {
+        if (isRepositoryClosed(configRepository) && database.isClosed()) {
+            openDatabase();
+        }
+        return configRepository;
+    }
+
+    public static ObjectRepository<User> getUserRepository() {
+        if (isRepositoryClosed(userRepository) && database.isClosed()) {
+            openDatabase();
+        }
+        return userRepository;
+    }
+
+    public static ObjectRepository<Session> getSessionRepository() {
+        if (isRepositoryClosed(sessionRepository) && database.isClosed()) {
+            openDatabase();
+        }
+        return sessionRepository;
+    }
+
+    public static ObjectRepository<Source> getSourceRepository() {
+        if (isRepositoryClosed(sourceRepository) && database.isClosed()) {
+            openDatabase();
+        }
+        return sourceRepository;
+    }
+
+    public static ObjectRepository<Movie> getMovieRepository() {
+        if (isRepositoryClosed(movieRepository) && database.isClosed()) {
+            openDatabase();
+        }
+        return movieRepository;
+    }
+
+    public static ObjectRepository<UserVideoWatchProgress> getWatchProgressRepository() {
+        if (isRepositoryClosed(watchProgressRepository) && database.isClosed()) {
+            openDatabase();
+        }
+        return watchProgressRepository;
     }
 }
