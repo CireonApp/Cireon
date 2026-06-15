@@ -81,11 +81,20 @@ async function signup() {
 
 
     const url = '/api/user/create';
+    const body = JSON.stringify(
+        {
+            password,
+            displayName,
+            username,
+            allowAdultContent: true
+        }
+    )
     const options = {
         method: 'POST',
         headers: {'content-type': 'application/json'},
-        body: `{"password":"${password}","displayName":"${displayName}","username":"${username}"}`
+        body
     };
+
 
     const response = await fetch(url, options);
     const json = await response.json();
