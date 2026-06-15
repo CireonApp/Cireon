@@ -1,6 +1,5 @@
 package com.cireonapp.server.controller.backend;
 
-import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.media.common.Artwork;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
@@ -95,9 +94,9 @@ public class ArtworkController {
 
         switch (sourceType) {
             case SourceType.MOVIE:
-                Optional<Movie> movie = MovieManager.get(id);
-                if (movie.isEmpty()) return service.getClasspathContent(APP_ICON_RESOURCE);
-                artwork = movie.get().getMetadata().getArtworks();
+                Movie movie = MovieManager.get(id);
+                if (movie == null) return service.getClasspathContent(APP_ICON_RESOURCE);
+                artwork = movie.getMetadata().getArtworks();
                 break;
 
             case null, default:
