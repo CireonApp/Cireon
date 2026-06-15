@@ -59,14 +59,14 @@ public class MovieController {
                     )
             )
     })
-    public ResponseEntity<?> search(HttpServletRequest request, @RequestParam(value = "query", defaultValue = "") String query) {
+    public ResponseEntity<?> search(HttpServletRequest request, @RequestParam(value = "query", defaultValue = "") String query, @RequestParam(value = "mustHaveFiles", defaultValue = "true") boolean mustHaveFiles) {
         Optional<User> user = CookieHelper.getUserFromSessionCookie(request);
 
         if (user.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(CommonResponseDto.Error.NOT_LOGGED_IN);
         }
 
-        List<SearchResults<Movie>> searchResults = MovieManager.search(query, 15);
+        List<SearchResults<Movie>> searchResults = MovieManager.search(query, 15,mustHaveFiles);
         List<SearchResults<MovieResponseDto>> results = new ArrayList<>();
         searchResults.forEach(result -> {
             SearchResults<MovieResponseDto> converted = new SearchResults<>(MovieResponseDto.getDtoFromMovie(result.content()), result.score());
