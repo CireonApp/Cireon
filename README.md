@@ -28,8 +28,8 @@ It is inspired by platforms like Emby and Jellyfin and gives you a clean way to 
 3. Start the server
    - Run the executable or start the JAR using JRE 21
 4. Open the web app
-   - http://localhost:50262
-   - Default port is 50262
+   - http://localhost:14567
+   - Default port is 14567
    - Port can be changed in settings
 
 ## 🌐 API
