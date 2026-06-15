@@ -1,6 +1,5 @@
 package com.cireonapp.server.domain.user;
 
-import com.cireonapp.server.ServerApplication;
 import com.cireonapp.server.domain.session.SessionManager;
 import com.cireonapp.server.initializer.Databases;
 import com.cireonapp.server.util.EncryptionHelper;
@@ -31,12 +30,12 @@ public class UserManager {
             user.setAdministrator(true);
         }
         user.setPassword(EncryptionHelper.encryptPassword_argon2(user.getPassword()));
-        WriteResult result = Databases.userRepository.insert(user);
+        WriteResult result = Databases.getUserRepository().insert(user);
         return result.getAffectedCount() > 0;
     }
 
     private static boolean atLeastOneAdmin() {
-        return !Databases.userRepository.find(where("administrator").eq(true)).isEmpty();
+        return !Databases.getUserRepository().find(where("administrator").eq(true)).isEmpty();
     }
 
     public static boolean updateLastUse(User user) {
@@ -44,15 +43,13 @@ public class UserManager {
     }
 
     public static boolean updateLastUse(String username) {
-        ServerApplication.LOGGER.info("Updating last use: " + username);
-
         Optional<User> optUser = get(username);
         if (optUser.isEmpty()) return false;
 
         User user = optUser.get();
         user.updateLastUseDate();
 
-        Databases.userRepository.update(user);
+        Databases.getUserRepository().update(user);
         return true;
     }
 
@@ -69,7 +66,7 @@ public class UserManager {
         existingUser.merge(updateInfo);
 
         // Update in database
-        Databases.userRepository.update(existingUser);
+        Databases.getUserRepository().update(existingUser);
         return true;
     }
 
@@ -80,7 +77,7 @@ public class UserManager {
      * @return Returns true if the user was deleted successfully, false otherwise.
      */
     public static boolean delete(User user) {
-        WriteResult result = Databases.userRepository.remove(user);
+        WriteResult result = Databases.getUserRepository().remove(user);
         SessionManager.deleteAllForUser(user.getUsername(), null, true);
         return result.getAffectedCount() > 0;
     }
@@ -99,7 +96,7 @@ public class UserManager {
 
     public static Optional<User> get(String username) {
         if (username == null || username.isBlank()) return Optional.empty();
-        return Optional.ofNullable(Databases.userRepository.getById(username));
+        return Optional.ofNullable(Databases.getUserRepository().getById(username));
     }
 
     /**
@@ -117,11 +114,11 @@ public class UserManager {
      * @warning: This method should be used with caution, as it can potentially return a large number of users if the database is large.
      */
     public static Cursor<User> getAll() {
-        return Databases.userRepository.find(Filter.ALL);
+        return Databases.getUserRepository().find(Filter.ALL);
     }
 
     public static int getCount() {
-        return Math.toIntExact(Databases.userRepository.size());
+        return Math.toIntExact(Databases.getUserRepository().size());
     }
 
     /**
