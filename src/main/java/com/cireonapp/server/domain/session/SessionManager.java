@@ -24,7 +24,7 @@ public class SessionManager {
         }
 
         String hashedToken = EncryptionHelper.hashSHA256(token);
-        return Optional.ofNullable(Databases.sessionRepository.getById(hashedToken));
+        return Optional.ofNullable(Databases.getSessionRepository().getById(hashedToken));
     }
 
     private static boolean isSessionUsable(Session session) {
@@ -73,7 +73,7 @@ public class SessionManager {
         if (!UserManager.exists(username)) return Optional.empty();
         String token = generateToken();
         Session newSession = new Session(EncryptionHelper.hashSHA256(token), username, TimeHelper.getCurrentTimeISO(), device);
-        WriteResult result = Databases.sessionRepository.insert(newSession);
+        WriteResult result = Databases.getSessionRepository().insert(newSession);
         if (result.getAffectedCount() > 0) {
             newSession.setToken(token);// return the actual token and not encrypted one. send to the user later via the api
             return Optional.of(newSession);
@@ -87,9 +87,9 @@ public class SessionManager {
             return false;
         }
         token = EncryptionHelper.hashSHA256(token);
-        Session session = Databases.sessionRepository.getById(token);
+        Session session = Databases.getSessionRepository().getById(token);
         if (session == null) return false;
-        WriteResult result = Databases.sessionRepository.remove(session);
+        WriteResult result = Databases.getSessionRepository().remove(session);
         return result.getAffectedCount() > 0;
     }
 
@@ -101,7 +101,7 @@ public class SessionManager {
 
         Session session = sessionOpt.get();
         if (sessionExpired(session.getCreationTime())) {
-            Databases.sessionRepository.remove(session);
+            Databases.getSessionRepository().remove(session);
             return Optional.empty();
         }
 
@@ -122,11 +122,11 @@ public class SessionManager {
             String hashedToken = EncryptionHelper.hashSHA256(token);
             filter = Filter.and(filter, where("token").notEq(hashedToken));
         }
-        WriteResult result = Databases.sessionRepository.remove(filter);
+        WriteResult result = Databases.getSessionRepository().remove(filter);
         return result.getAffectedCount() > 0;
     }
 
     public static Cursor<Session> getAllForUser(String username) {
-        return Databases.sessionRepository.find(where("username").eq(username));
+        return Databases.getSessionRepository().find(where("username").eq(username));
     }
 }
