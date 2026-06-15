@@ -79,7 +79,7 @@ public class MovieDB {
         return metadata;
     }
 
-    private static void attachImages_tmdb(MovieMetadata metadata, int movieId, Images images) throws TmdbException {
+    private static void attachImages_tmdb(MovieMetadata metadata, int movieId, Images images) {
         Artwork art = new Artwork();
 
         if (!images.getPosters().isEmpty()) {

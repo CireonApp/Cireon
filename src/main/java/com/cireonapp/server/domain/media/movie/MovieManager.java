@@ -96,14 +96,10 @@ public class MovieManager {
     /**
      * will return a cursor of movies that contain a file with the given hash.
      * If no movies are found will return an empty cursor.
-     *
-     * @param hash
-     * @return
      */
     public static Cursor<Movie> getMovieByHash(String hash) {
-        Cursor<Movie> movies = Databases.getMovieRepository().find(where("files").elemMatch(where("hash").eq(hash)));
 
-        return movies;
+        return Databases.getMovieRepository().find(where("files").elemMatch(where("hash").eq(hash)));
 
     }
 

@@ -88,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
 
-            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
+            hlsInstance.on(Hls.Events.MANIFEST_PARSED, function () {
                 video.play().catch(() => console.log("Autoplay prevented by browser policy"));
                 const playBtn = document.getElementById("playBtn");
                 if (playBtn) playBtn.textContent = "pause";

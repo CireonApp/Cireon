@@ -8,15 +8,6 @@ public class MediaInfoByFFmpeg {
     private Integer height;
     private Integer width;
 
-    public MediaInfoByFFmpeg(Double duration, Double fps, String audioCodec, String videoCodec, Integer height, Integer width) {
-        this.duration = duration;
-        this.fps = fps;
-        this.audioCodec = audioCodec;
-        this.videoCodec = videoCodec;
-        this.height = height;
-        this.width = width;
-    }
-
     public MediaInfoByFFmpeg() {
     }
 

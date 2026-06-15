@@ -16,7 +16,7 @@ import static org.dizitart.no2.filters.FluentFilter.where;
 
 public class SessionManager {
     public static final long SESSION_EXPIRATION_TIME_SECONDS = 2592000L; // 30 days in seconds
-    private static SecureRandom secureRandom = new SecureRandom();
+    private static final SecureRandom secureRandom = new SecureRandom();
 
     private static Optional<Session> findByRawToken(String token) {
         if (token == null || token.isBlank()) {
@@ -113,17 +113,17 @@ public class SessionManager {
         return Optional.of(session);
     }
 
-    public static boolean deleteAllForUser(String username, String token, boolean deleteCurrent) {
+    public static void deleteAllForUser(String username, String token, boolean deleteCurrent) {
         Filter filter = where("username").eq(username);
         if (!deleteCurrent) {
             if (token == null || token.isBlank()) {
-                return false;
+                return;
             }
             String hashedToken = EncryptionHelper.hashSHA256(token);
             filter = Filter.and(filter, where("token").notEq(hashedToken));
         }
         WriteResult result = Databases.getSessionRepository().remove(filter);
-        return result.getAffectedCount() > 0;
+        result.getAffectedCount();
     }
 
     public static Cursor<Session> getAllForUser(String username) {

@@ -20,21 +20,6 @@ public class CommonMetadata {
     private Long lastUpdated;
     private Long releaseDateTimestamp;
 
-    public CommonMetadata(String id, String title, String originalTitle, String description, Artwork artworks, int runtime, Set<Genres> genres, Set<String> alternativeTitles, boolean adult, String tagline, long lastUpdated) {
-        this.id = id;
-        this.title = title;
-        this.originalTitle = originalTitle;
-        this.description = description;
-        this.artworks = artworks;
-        this.runtime = runtime;
-        this.genres = genres;
-        this.alternativeTitles = alternativeTitles;
-        this.adult = adult;
-        this.tagline = tagline;
-        this.lastUpdated = lastUpdated;
-    }
-
-
     public CommonMetadata() {
     }
 

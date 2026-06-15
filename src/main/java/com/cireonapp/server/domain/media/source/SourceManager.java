@@ -73,7 +73,6 @@ public class SourceManager {
      */
     public static boolean delete(String sourceID) {
         Optional<Source> source = get(sourceID);
-        if (source.isEmpty()) return false;
-        return delete(source.get());
+        return source.filter(SourceManager::delete).isPresent();
     }
 }

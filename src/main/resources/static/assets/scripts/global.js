@@ -3,7 +3,7 @@ document.addEventListener('contextmenu', (event) => {
     event.preventDefault();
 });
 
-document.addEventListener('DOMContentLoaded', (event) => {
+document.addEventListener('DOMContentLoaded', () => {
 
     const sliders = document.querySelectorAll('.horizontal-drag-container');
 

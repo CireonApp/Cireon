@@ -22,9 +22,9 @@ public class FileWatcher {
 
     private static final Map<String, SourceWatcher> activeWatchers = new ConcurrentHashMap<>();
 
-    public static boolean registerSource(Source source) {
+    public static void registerSource(Source source) {
         if (activeWatchers.containsKey(source.getId())) {
-            return false;
+            return;
         }
 
         try {
@@ -72,9 +72,7 @@ public class FileWatcher {
             watcherThread.start();
 
             activeWatchers.put(source.getId(), new SourceWatcher(watcher, watcherThread));
-            return true;
         } catch (IOException e) {
-            return false;
         }
     }
 
