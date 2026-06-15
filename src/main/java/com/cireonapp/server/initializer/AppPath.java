@@ -22,8 +22,8 @@ public class AppPath {
             AppDirs appDirs = AppDirsFactory.getInstance();
 
             path = Paths.get(
-                    appDirs.getUserDataDir(
-                            "Cireon", // app name
+                    appDirs.getSharedDir(
+                            "App", // app name
                             null,            // version
                             "Cireon"         // author/company
                     )
