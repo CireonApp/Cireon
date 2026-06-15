@@ -2,8 +2,17 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
 <!--/*@thymesVar id="currentSettings" type="com.cireonapp.server.domain.config.Config"*/-->
-<div class=" border rounded-md gap-2 p-4 w-full flex flex-col justify-around border-white/10 bg-background-modal/70"
+<div class=" border rounded-md gap-2 p-4 w-full flex flex-col justify-around border-white/10 bg-background-modal/70 transition-transform duration-300 hover:-translate-y-2"
      th:fragment="config(currentSettings)">
+    <!-- Sticky Save Button -->
+    <div class="sticky top-32 md:top-32 lg:top-19 z-40 bg-background-modal/95 backdrop-blur-sm border-b border-white/10 -mx-4 -mt-4 px-4 py-3 mb-4">
+        <button onclick="saveAllConfig()"
+                class="w-full cursor-pointer rounded-lg bg-primary py-3 px-4 font-extrabold text-white shadow-lg transition hover:brightness-110 active:brightness-95 light:text-primary-400 flex items-center justify-center gap-2">
+            <span class="font-material-sharp text-2xl font-semibold">save</span>
+            <span>Save All Configuration</span>
+        </button>
+    </div>
+
     <div id="error-bubble" style="display: none"
          class="mb-2 flex w-full flex-col items-start justify-start gap-2 break-all rounded-lg border border-red-500/30 border-l-4 border-l-red-700 bg-red-500/20 p-4 light:border-l-red-600 light:bg-red-300/80">
         <div class="flex w-full flex-row items-center justify-start gap-2">
@@ -25,66 +34,133 @@
     <div class="flex flex-col gap-2">
         <h1 class="text-xl font-bold flex flex-row justify-center items-center w-fit gap-3">
             <span class="font-semibold text-2xl font-material-sharp">network_manage</span>Network</h1>
-        <div class=" px-4 mb-1 flex md:w-1/2 flex-col gap-1.5">
-            <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="port-input">Port</label>
-            <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="port-input">The port the app
-                will listen to. Required application restart for changes to take effect!</label>
-            <div class="flex flex-row w-full h-full gap-1">
-                <input placeholder="Port"
-                       class=" w-full rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-12 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
-                       required min="0" max="65535" th:value="${currentSettings.port}" type="number" id="port-input"/>
-                <button onclick="savePort()"
-                        class="cursor-pointer rounded-lg bg-primary px-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400">
-                    Save
-                </button>
+        <div class=" px-4 mb-1 flex md:flex-row flex-col md:justify-between gap-1.5 items-center">
+            <div class="flex flex-col gap-1.5 w-full md:w-1/2">
+                <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="port-input">Port</label>
+                <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="port-input">The port the
+                    app
+                    will listen to. Required application restart for changes to take effect!</label>
             </div>
+            <input placeholder="Port"
+                   class="h-12 w-full md:w-1/2 rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-12 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
+                   required min="0" max="65535" th:value="${currentSettings.port}" type="number" id="port-input"/>
         </div>
     </div>
     <div class="h-px w-full bg-white/10"></div>
     <div class="flex flex-col gap-2">
         <h1 class="text-xl font-bold flex flex-row justify-center items-center w-fit gap-3">
             <span class="font-semibold text-2xl font-material-sharp">groups</span>Users</h1>
-        <div class=" px-4 mb-1 flex md:w-1/2 flex-col gap-1.5">
-            <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="users-max-input">Max
-                Users</label>
-            <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="users-max-input">The max
-                amount of users that a non admin can create.</label>
-            <div class="flex flex-row w-full h-full gap-1">
-                <input placeholder="Max Users"
-                       class=" w-full rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-12 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
-                       required min="0" th:value="${currentSettings.maxUsers}" type="number" id="users-max-input"/>
-                <button onclick="saveMaxUsers()"
-                        class="cursor-pointer rounded-lg bg-primary px-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400">
-                    Save
-                </button>
+        <div class="px-4 mb-1 flex md:flex-row flex-col md:justify-between gap-1.5 items-center">
+            <div class="flex flex-col gap-1.5 w-full md:w-1/2">
+                <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="users-max-input">Max
+                    Users</label>
+                <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="users-max-input">The max
+                    amount of users that a non admin can create.</label>
+            </div>
+            <input placeholder="Max Users"
+                   class="h-12 w-full md:w-1/2 rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-12 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black"
+                   required min="0" th:value="${currentSettings.maxUsers}" type="number" id="users-max-input"/>
+        </div>
+        <div class="px-4 mb-1 flex md:flex-row flex-col md:justify-between gap-1.5 items-center">
+            <div class="flex flex-col gap-1.5 w-full md:w-1/2">
+                <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800"
+                       for="allow-user-creation-input">Allow
+                    User Creation</label>
+                <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800"
+                       for="allow-user-creation-input">Whether
+                    to allow anyone to create a user</label>
+            </div>
+            <label for="allow-user-creation-input"
+                   class="h-12 flex w-full md:w-1/2 cursor-pointer items-center justify-between rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition hover:border-primary/60 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black">
+                <span id="allow-user-creation-input-text"
+                      th:text="${currentSettings.allowUserCreation?'Enabled':'Disabled'}"></span>
+                <input onchange="(()=>{
+                    document.getElementById('allow-user-creation-input-text').innerText = this.checked ? 'Enabled':'Disabled'
+                })()"
+                       class="peer sr-only" th:checked="${currentSettings.allowUserCreation}" type="checkbox"
+                       id="allow-user-creation-input"/>
+                <span class="relative inline-block h-6 w-11 rounded-full bg-zinc-700 transition-colors duration-200 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform after:duration-200 peer-checked:bg-primary peer-checked:after:translate-x-5 light:bg-zinc-300"></span>
+            </label>
+        </div>
+    </div>
+    <div class="h-px w-full bg-white/10"></div>
+    <div class="flex flex-col gap-2">
+        <h1 class="text-xl font-bold flex flex-row justify-center items-center w-fit gap-3">
+            <span class="font-semibold text-2xl font-material-sharp">movie</span>Streaming</h1>
+        <div class="px-4 mb-1 flex md:flex-row flex-col md:justify-between gap-1.5 items-center">
+            <div class="flex flex-col gap-1.5 w-full md:w-1/2">
+                <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="hardware-acceleration-input">Hardware
+                    Acceleration</label>
+                <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="hardware-acceleration-input">
+                    Use hardware instead of software encoding, Highly recommended if you have a supported GPU, will offload
+                    work to the gpu.
+                </label>
+            </div>
+            <label for="hardware-acceleration-input"
+                   class="h-12 flex w-full md:w-1/2 cursor-pointer items-center justify-between rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition hover:border-primary/60 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black">
+                <span id="hardware-acceleration-input-text"
+                      th:text="${currentSettings.hardwareAcceleration?'Enabled':'Disabled'}"></span>
+                <input onchange="(()=>{
+                     hardwareAccelerationContainer.style.display = this.checked ? 'flex':'none';
+                    document.getElementById('hardware-acceleration-input-text').innerText = this.checked ? 'Enabled':'Disabled'
+                })()"
+                       class="peer sr-only" th:checked="${currentSettings.hardwareAcceleration}" type="checkbox"
+                       id="hardware-acceleration-input"/>
+                <span class="relative inline-block h-6 w-11 rounded-full bg-zinc-700 transition-colors duration-200 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform after:duration-200 peer-checked:bg-primary peer-checked:after:translate-x-5 light:bg-zinc-300"></span>
+            </label>
+        </div>
+        <div id="hardwareAccelerationContainer" class="px-4 mb-1 flex md:flex-row flex-col md:justify-between gap-1.5 items-center">
+            <div class="flex flex-col gap-1.5 w-full md:w-1/2">
+                <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="encoder-input">
+                    Encoder
+                </label>
+                <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="encoder-input">
+                    Select an encoder. Encoder must be compatible with your system.</br> 'Auto' will automatically select
+                    the best encoder for your system.</br>
+                    Note: LibX264 is a software encoder, to use it just disable hardware acceleration.
+                </label>
+            </div>
+            <div class="relative w-full md:w-1/2 h-12">
+                <select id="encoder-input"
+                        class="h-full w-full appearance-none rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-10 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black cursor-pointer">
+                    <option th:each="encoder : ${T(com.cireonapp.server.domain.config.HardwareEncoders).values()}"
+                            th:value="${encoder.toString()}"
+                            th:disabled="${encoder.toString() == 'LIBX264'}"
+                            th:selected="${currentSettings.encoder != null ? ( encoder.label == currentSettings.encoder.label ? true:false):(encoder.label == 'auto'?true:false)}"
+                            th:text="${encoder.name}">
+                    </option>
+                </select>
+                <p class="fill-current font-material-sharp pointer-events-none absolute inset-y-0 right-0  -translate-x-2 text-2xl flex items-center text-zinc-400">
+                    keyboard_arrow_down
+                </p>
             </div>
         </div>
-        <div class=" px-4 mb-1 flex md:w-1/2 flex-col gap-1.5">
-            <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="allow-user-creation-input">Allow
-                User Creation</label>
-            <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="allow-user-creation-input">Whether
-                to allow anyone to create a user</label>
-            <div class="flex flex-row w-full h-full gap-1">
-                <label for="allow-user-creation-input"
-                       class="flex w-full cursor-pointer items-center justify-between rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-sm text-white outline-none transition hover:border-primary/60 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black">
-                    <span id="allow-user-creation-input-text"
-                          th:text="${currentSettings.allowUserCreation?'Enabled':'Disabled'}"></span>
-                    <input onchange="(()=>{
-                        document.getElementById('allow-user-creation-input-text').innerText = this.checked ? 'Enabled':'Disabled'
-                    })()"
-                           class="peer sr-only" th:checked="${currentSettings.allowUserCreation}" type="checkbox"
-                           id="allow-user-creation-input"/>
-                    <span class="relative inline-block h-6 w-11 rounded-full bg-zinc-700 transition-colors duration-200 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-transform after:duration-200 peer-checked:bg-primary peer-checked:after:translate-x-5 light:bg-zinc-300"></span>
+        <div class="px-4 mb-1 flex md:flex-row flex-col md:justify-between gap-1.5 items-center">
+            <div class="flex flex-col gap-1.5 w-full md:w-1/2">
+                <label class="pl-1 text-md font-medium text-zinc-100 light:text-zinc-800" for="encoding-quality-input">
+                    Quality
                 </label>
-                <button onclick="saveAllowUserCreation()"
-                        class="cursor-pointer rounded-lg bg-primary px-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400">
-                    Save
-                </button>
+                <label class="pl-1 text-sm font-medium text-zinc-300 light:text-zinc-800" for="encoding-quality-input">
+                    Select encoding quality. Higher quality uses more CPU or GPU and more bandwidth. Lower quality uses less resources.
+                </label>
+            </div>
+            <div class="relative w-full md:w-1/2 h-12">
+                <select id="encoding-quality-input"
+                        class="h-full w-full appearance-none rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 pr-10 text-sm text-white outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/40 light:border-primary-100/70 light:border-2 light:bg-stone-100 light:text-black cursor-pointer">
+                    <option th:each="quality : ${T(com.cireonapp.server.domain.config.EncodingQuality).values()}"
+                            th:value="${quality.toString()}"
+                            th:selected="${currentSettings.encodingQuality != null ? ( quality.label == currentSettings.encodingQuality.label ? true:false):(quality.label == 'balanced'?true:false)}"
+                            th:text="${quality.name}">
+                    </option>
+                </select>
+                <p class="fill-current font-material-sharp pointer-events-none absolute inset-y-0 right-0  -translate-x-2 text-2xl flex items-center text-zinc-400">
+                    keyboard_arrow_down
+                </p>
             </div>
         </div>
     </div>
 </div>
-<div class="border flex flex-col rounded-md gap-2 p-4 w-full justify-around border-white/10 bg-background-modal/70"
+<div class="border flex flex-col rounded-md gap-2 p-4 w-full justify-around border-white/10 bg-background-modal/70 transition-transform duration-300 hover:-translate-y-2"
      th:fragment="users(userList)">
     <div class="overflow-x-auto horizontal-scrollbar rounded-lg border border-white/10 bg-black/10 shadow-inner shadow-black/20">
         <table class="w-full text-left border-collapse text-sm">
@@ -134,7 +210,7 @@
         </table>
     </div>
 </div>
-<div class="border flex flex-col items-center rounded-md gap-2 p-4 w-full justify-around border-white/10 bg-background-modal/70"
+<div class="border flex flex-col items-center rounded-md gap-2 p-4 w-full justify-around border-white/10 bg-background-modal/70 transition-transform duration-300 hover:-translate-y-2"
      th:fragment="content(sourceList)">
     <button class="cursor-pointer max-sm:w-full rounded-lg bg-primary p-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400"
             id="create-source">Create Source
@@ -184,5 +260,6 @@
         </table>
     </div>
 </div>
+
 </body>
 </html>

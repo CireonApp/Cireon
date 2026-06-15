@@ -58,38 +58,51 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-async function handleConfigUpdate(body) {
+async function saveAllConfig() {
     hideError();
     hideSuccess();
+
+    const maxUsersInput = document.getElementById('users-max-input');
+    const portInput = document.getElementById('port-input');
+    const allowUserCreationInput = document.getElementById('allow-user-creation-input');
+    const hardwareAccelerationInput = document.getElementById('hardware-acceleration-input');
+    const encoderInput = document.getElementById('encoder-input');
+    const encodingQualityInput = document.getElementById('encoding-quality-input');
+
+    const maxUsers = parseInt(maxUsersInput.value || 8);
+    const port = parseInt(portInput.value || 14567);
+    const allowUserCreation = allowUserCreationInput.checked;
+    const hardwareAcceleration = hardwareAccelerationInput.checked;
+    const encoder = encoderInput.value;
+    const encodingQuality = encodingQualityInput.value;
+
+    const config = {
+        maxUsers,
+        port,
+        allowUserCreation,
+        hardwareAcceleration,
+        encoder,
+        encodingQuality
+    };
 
     const req = await fetch('/api/config/update', {
         method: 'PUT',
         headers: {'content-type': 'application/json'},
-        body: body,
+        body: JSON.stringify(config),
     });
+
     const json = await req.json();
     if (!req.ok) {
-        setError(json.errorMessage)
+        setError(json.errorMessage);
+        return;
     }
-    setSuccess(json.successMessage)
-}
 
-async function saveMaxUsers() {
-    const maxUsersInput = document.getElementById('users-max-input');
-    const maxUsers = maxUsersInput.value || 8;
-    await handleConfigUpdate(`{"maxUsers": ${maxUsers}}`)
-}
+    setSuccess(json.successMessage);
 
-async function savePort() {
-    const portInput = document.getElementById('port-input');
-    const port = portInput.value || 50262;
-    await handleConfigUpdate(`{"port": ${port}}`)
-}
-
-async function saveAllowUserCreation() {
-    const allowUserCreationInput = document.getElementById('allow-user-creation-input');
-    const allowUserCreation = allowUserCreationInput.checked;
-    await handleConfigUpdate(`{"allowUserCreation": ${allowUserCreation}}`)
+    // Reload after a short delay to show success message
+    setTimeout(() => {
+        window.location.reload();
+    }, 1500);
 }
 
 var errorBubbleTimeout;
@@ -153,3 +166,8 @@ async function deleteSource(id) {
 
     window.location.reload();
 }
+
+
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("hardwareAccelerationContainer").style.display = document.getElementById("hardware-acceleration-input").checked ? 'flex':'none';
+});
