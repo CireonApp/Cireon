@@ -1,6 +1,9 @@
 package com.cireonapp.server.controller.frontend;
 
-import com.cireonapp.server.domain.media.common.*;
+import com.cireonapp.server.domain.media.common.Billboard;
+import com.cireonapp.server.domain.media.common.Carousel;
+import com.cireonapp.server.domain.media.common.CarouselPoster;
+import com.cireonapp.server.domain.media.common.Genres;
 import com.cireonapp.server.domain.media.movie.Movie;
 import com.cireonapp.server.domain.media.movie.MovieManager;
 import com.cireonapp.server.domain.media.source.SourceType;
@@ -14,11 +17,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.List;
 
 @Controller
 public class HomeController {
@@ -34,7 +35,7 @@ public class HomeController {
         model.addAttribute("mediaBillboard", billboard);
 
         ArrayList<Carousel> carousels = new ArrayList<>();
-        if (!MovieManager.getAll().isEmpty()) {
+        if (!MovieManager.getAll(true).isEmpty()) {
             carousels.add(getRecentlyAddedMoviesCarousel());
             carousels.add(getNewestReleasesMovieCarousel());
         }
@@ -51,7 +52,7 @@ public class HomeController {
         carousel.setTitle("Recently Added Movies");
         carousel.setDescription("Latest movies in the catalogue");
         carousel.setSourceType(SourceType.MOVIE);
-        List<Movie> movies = MovieManager.getByCreationDate(SortOrder.Descending, 15);
+        List<Movie> movies = MovieManager.getByCreationDate(SortOrder.Descending, 15,true);
         for (Movie movie : movies) {
             carousel.addPoster(CarouselPoster.createCarouselPosterFromMovie(movie));
         }
@@ -63,7 +64,7 @@ public class HomeController {
         carousel.setTitle("Newest Releases");
         carousel.setDescription("Latest movies by release date");
         carousel.setSourceType(SourceType.MOVIE);
-        List<Movie> movies = MovieManager.getByReleaseDate(SortOrder.Descending, 15);
+        List<Movie> movies = MovieManager.getByReleaseDate(SortOrder.Descending, 15, true);
         for (Movie movie : movies) {
             if (carousel.getPosters().size() >= 15) break;
             carousel.addPoster(CarouselPoster.createCarouselPosterFromMovie(movie));
@@ -80,7 +81,7 @@ public class HomeController {
         Movie movie = movieBillboard.get();
 
         Billboard billboard = new Billboard();
-        billboard.id = movie.getHash();
+        billboard.id = movie.getId();
         billboard.sourceType = "movie";
         billboard.name = movie.getMetadata().getTitle();
         billboard.isAdult = movie.getMetadata().isAdult();
@@ -99,7 +100,7 @@ public class HomeController {
         );
 
         SplittableRandom rng = new SplittableRandom(seed);
-        Cursor<Movie> movies = MovieManager.getAll();
+        Cursor<Movie> movies = MovieManager.getAll(true);
 
         Movie chosen = null;
         long seen = 0;
