@@ -2,11 +2,13 @@ package com.cireonapp.server.controller.backend;
 
 import com.cireonapp.server.domain.config.Config;
 import com.cireonapp.server.domain.config.ConfigManager;
+import com.cireonapp.server.domain.config.HardwareEncoders;
 import com.cireonapp.server.domain.user.User;
 import com.cireonapp.server.dto.CommonResponseDto;
 import com.cireonapp.server.dto.ErrorResponseDto;
 import com.cireonapp.server.dto.SuccessResponseDto;
 import com.cireonapp.server.dto.UpdateConfigRequestDto;
+import com.cireonapp.server.service.FFmpegServices;
 import com.cireonapp.server.util.CookieHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -143,12 +145,20 @@ public class ConfigController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(CommonResponseDto.Error.INSUFFICIENT_PERMISSIONS);
 
+        boolean wasOnAuto = false;
+        if (newConfig.encoder == HardwareEncoders.AUTO) {
+            newConfig.encoder = FFmpegServices.getBestAvailableHardwareCodec();
+            wasOnAuto = true;
+        }
 
-        Config config = ConfigManager.get();
-        if (newConfig.maxUsers != null) config.setMaxUsers(newConfig.maxUsers);
-        if (newConfig.port != null) config.setPort(newConfig.port);
-        if (newConfig.allowUserCreation != null) config.setAllowUserCreation(newConfig.allowUserCreation);
-        boolean result = ConfigManager.update(config);
+        if (!wasOnAuto && newConfig.encoder != null) {
+            boolean canInit = FFmpegServices.canInitializeCodec(newConfig.encoder.getLabel());
+            if (!canInit)
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(new ErrorResponseDto("The specified override encoder is not supported on this system."));
+        }
+
+        boolean result = ConfigManager.update(newConfig.toConfig());
 
         if (result) return ResponseEntity.ok(new SuccessResponseDto("Updated config successfully!"));
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

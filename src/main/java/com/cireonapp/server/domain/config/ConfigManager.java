@@ -2,6 +2,7 @@ package com.cireonapp.server.domain.config;
 
 import com.cireonapp.server.initializer.Databases;
 
+import com.cireonapp.server.service.FFmpegServices;
 import org.dizitart.no2.common.WriteResult;
 import org.dizitart.no2.filters.Filter;
 
@@ -13,7 +14,7 @@ public class ConfigManager {
      * @return
      */
     public static Config get() {
-        Config config = Databases.configRepository.find().firstOrNull();
+        Config config = Databases.getConfigRepository().find().firstOrNull();
         return config != null ? config : new Config();
     }
 
@@ -24,14 +25,18 @@ public class ConfigManager {
      * @return true if the configuration was updated successfully, false otherwise.
      */
     public static boolean update(Config newConfig) {
-        Filter filter = config -> true; // Update all documents (there should only be one)
-        WriteResult result = Databases.configRepository.update(filter, newConfig);
+        Config config = get();
+        config.merge(newConfig);
+        if (newConfig.getEncoder() != null) {
+            FFmpegServices.setEncoder(newConfig.getEncoder(), false);
+        }
+        WriteResult result = Databases.getConfigRepository().update(Filter.ALL, config);
         return result.getAffectedCount() > 0;
     }
 
     public static boolean reset() {
         Filter filter = config -> true; // Update all documents (there should only be one)
-        WriteResult result = Databases.configRepository.update(filter, new Config());
+        WriteResult result = Databases.getConfigRepository().update(filter, new Config());
         return result.getAffectedCount() > 0;
     }
 }
