@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class MovieResponseDto {
-    private String hash;
+    private String id;
     private String title;
     private String originalTitle;
     private String description;
@@ -21,12 +21,12 @@ public class MovieResponseDto {
     MovieResponseDto() {
     }
 
-    public String getHash() {
-        return hash;
+    public String getId() {
+        return id;
     }
 
-    public void setHash(String hash) {
-        this.hash = hash;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getTitle() {
@@ -103,7 +103,7 @@ public class MovieResponseDto {
 
     public static MovieResponseDto getDtoFromMovie(Movie movie) {
         MovieResponseDto movieResponseDto = new MovieResponseDto();
-        movieResponseDto.setHash(movie.getHash());
+        movieResponseDto.setId(movie.getId());
         movieResponseDto.setTitle(movie.getMetadata().getTitle());
         movieResponseDto.setOriginalTitle(movie.getMetadata().getOriginalTitle());
         movieResponseDto.setDescription(movie.getMetadata().getDescription());
