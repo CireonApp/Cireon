@@ -1,7 +1,7 @@
 {
   "scripts": {
     "dev:css": "tailwindcss -i src/main/resources/static/assets/styles/input.css -o src/main/resources/static/assets/styles/style.css --watch",
-    "dev:spring": "mvnw.cmd spring-boot:run",
+    "dev:spring": "mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev -DskipTests",
     "dev": "concurrently --names \"tailwind,spring\" \"npm run dev:css\" \"npm run dev:spring\""
   },
   "type": "commonjs",
