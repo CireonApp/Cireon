@@ -1,5 +1,8 @@
 package com.cireonapp.server.dto;
 
+import com.cireonapp.server.domain.config.Config;
+import com.cireonapp.server.domain.config.EncodingQuality;
+import com.cireonapp.server.domain.config.HardwareEncoders;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -23,4 +26,25 @@ public class UpdateConfigRequestDto {
 
     @Schema(defaultValue = "false", description = "Whether the first time setup has been completed.")
     public Boolean firstTimeSetupComplete;
+
+    @Schema(defaultValue = "true", description = "Whether hardware acceleration is enabled. If false, the server will use software rendering, which may be slower but more compatible with older hardware.")
+    public Boolean hardwareAcceleration;
+
+    @Schema(defaultValue = "AUTO")
+    public HardwareEncoders encoder;
+
+    @Schema(defaultValue = "BALANCED")
+    public EncodingQuality encodingQuality;
+
+    public Config toConfig(){
+        Config config = new Config();
+        config.setPort(this.port);
+        config.setMaxUsers(this.maxUsers);
+        config.setAllowUserCreation(this.allowUserCreation);
+        config.setFirstTimeSetupComplete(this.firstTimeSetupComplete);
+        config.setHardwareAcceleration(this.hardwareAcceleration);
+        config.setEncoder(this.encoder);
+        config.setEncodingQuality(this.encodingQuality);
+        return config;
+    }
 }
