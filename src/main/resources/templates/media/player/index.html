@@ -2,455 +2,57 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <th:block th:replace="~{fragments/headLinks::headLinks}"></th:block>
-    <script th:inline="javascript">
-        /*<![CDATA[*/
-        const MEDIA_HASH = /*[[${media.hash}]]*/ '';
-        console.log('MEDIA_HASH loaded:', MEDIA_HASH);
-        /*]]>*/
-    </script>
+
+    <script th:src="@{/assets/scripts/hls.js}"></script>
     <link rel="stylesheet" th:href="@{/assets/styles/style.css}"/>
     <meta charset="UTF-8">
     <script th:src="@{/assets/scripts/global.js}"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${media.title}"></title>
-    <style>
-        .player-range,
-        .volume-range {
-            -webkit-appearance: none;
-            appearance: none;
-            height: 0.5rem;
-            border-radius: 9999px;
-            outline: none;
-        }
-
-        .player-range {
-            --played: 0%;
-            --buffered: 0%;
-            background: linear-gradient(
-                    to right,
-                    color-mix(in oklab, var(--color-primary) 95%, transparent) 0 var(--played, 0%),
-                    rgba(255, 255, 255, 0.55) var(--played, 0%) var(--buffered, 0%),
-                    rgba(255, 255, 255, 0.18) var(--buffered, 0%) 100%
-            );
-        }
-
-        .volume-range {
-            --volume: 0%;
-            background: linear-gradient(
-                    to right,
-                    color-mix(in oklab, var(--color-primary) 95%, transparent) 0 var(--volume, 0%),
-                    rgba(255, 255, 255, 0.22) var(--volume, 0%) 100%
-            );
-        }
-
-        .player-range::-webkit-slider-thumb,
-        .volume-range::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 0.9rem;
-            height: 0.9rem;
-            border-radius: 9999px;
-            border: 2px solid rgba(15, 23, 42, 0.9);
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: 0 1px 5px rgba(2, 6, 23, 0.45);
-            cursor: pointer;
-        }
-
-        .player-range::-moz-range-thumb,
-        .volume-range::-moz-range-thumb {
-            width: 0.9rem;
-            height: 0.9rem;
-            border-radius: 9999px;
-            border: 2px solid rgba(15, 23, 42, 0.9);
-            background: rgba(255, 255, 255, 0.96);
-            box-shadow: 0 1px 5px rgba(2, 6, 23, 0.45);
-            cursor: pointer;
-        }
-
-        .player-range::-moz-range-track,
-        .volume-range::-moz-range-track {
-            height: 0.5rem;
-            border-radius: 9999px;
-            background: transparent;
-        }
-
-        /* Loading spinner styles */
-        .spinner {
-            width: 3rem;
-            height: 3rem;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid rgba(255, 255, 255, 0.9);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-    </style>
-    <script defer>
-        let alreadyUnmuted = false;
-
-        function unmuteFirstTime(videoElement) {
-            if (!alreadyUnmuted) {
-                videoElement.muted = false;
-                alreadyUnmuted = true;
-            }
-        }
-
-        function handleOnPlay(videoElement) {
-            unmuteFirstTime(videoElement);
-        }
-
-        function handleOnError() {
-            const errorScreenElement = document.getElementById('error-screen');
-            errorScreenElement.style.display = 'block';
-        }
-
-        // Ensure DOM is ready before accessing elements
-        document.addEventListener('DOMContentLoaded', () => {
-            const video = document.getElementById("video");
-            const seekBar = document.getElementById("seekBar");
-            const playBtn = document.getElementById("playBtn");
-            const volumeBtn = document.getElementById("volumeBtn");
-            const volumeSlider = document.getElementById("volumeSlider");
-            const fullscreenBtn = document.getElementById("fullscreenBtn");
-            const playerContainer = document.getElementById("playerContainer");
-            const controlsOverlay = document.getElementById("controlsOverlay");
-            const currentTimeElement = document.getElementById("current-time-text");
-            const durationTextElement = document.getElementById("duration-text");
-            const middleArea = document.getElementById("middleArea");
-            const pictureInPictureButton = document.getElementById("pictureInPictureBtn");
-            const loadingSpinner = document.getElementById("loading-spinner")
-
-            if (!video || !seekBar || !playBtn || !volumeBtn || !volumeSlider || !fullscreenBtn || !playerContainer || !controlsOverlay) {
-                console.error('Required player elements not found');
-                return;
-            }
-
-            function showLoadingSpinner() {
-                loadingSpinner.style.display = "flex"
-            }
-
-            function hideLoadingSpinner() {
-                loadingSpinner.style.display = 'none';
-            }
-
-            video.addEventListener('loadstart', showLoadingSpinner);
-            video.addEventListener('canplaythrough', hideLoadingSpinner);
-
-            video.addEventListener('waiting', showLoadingSpinner);
-            video.addEventListener('playing', hideLoadingSpinner);
-
-
-            // ── FFmpeg On-The-Fly State Management ────────────────────────────
-            let REAL_DURATION = 0;
-            let currentStartOffset = 0; // Tracks how many seconds into the video we skipped
-            let isDragging = false;
-
-            function formatSeconds(totalSeconds) {
-                if (isNaN(totalSeconds) || !isFinite(totalSeconds)) return "00:00";
-                const hours = Math.floor(totalSeconds / 3600);
-                const minutes = Math.floor((totalSeconds % 3600) / 60);
-                const seconds = Math.floor(totalSeconds % 60);
-
-                const paddedM = String(minutes).padStart(2, '0');
-                const paddedS = String(seconds).padStart(2, '0');
-                if (hours === 0) return `${paddedM}:${paddedS}`;
-
-                const paddedH = String(hours).padStart(2, '0');
-                return `${paddedH}:${paddedM}:${paddedS}`;
-            }
-
-            // 1. Fetch the true duration from the backend header (HEAD request for headers only)
-            async function fetchTrueDuration() {
-                try {
-                    // CALL THE NEW LIGHTWEIGHT ENDPOINT
-                    const response = await fetch(`/api/streaming/info/${MEDIA_HASH}`);
-                    const data = await response.json();
-
-                    if (data.duration) {
-                        REAL_DURATION = parseInt(data.duration, 10);
-                        seekBar.max = REAL_DURATION;
-                        durationTextElement.textContent = formatSeconds(REAL_DURATION);
-                    }
-
-                    // Now that the duration is loaded, set the video source
-                    video.src = `/api/streaming/video/${MEDIA_HASH}`;
-                    video.play();
-                    playBtn.textContent = "pause";
-                } catch (e) {
-                    console.error("Failed to fetch info:", e);
-                    video.src = `/api/streaming/video/${MEDIA_HASH}`;
-                    video.play();
-                }
-            }
-
-            fetchTrueDuration();
-
-            // 2. Server-Side Seeking Mechanism
-            function seekToTime(targetSecond) {
-                if (targetSecond < 0) targetSecond = 0;
-                if (REAL_DURATION && targetSecond > REAL_DURATION) targetSecond = REAL_DURATION;
-
-                currentStartOffset = targetSecond;
-
-                // Add the start parameter to command FFmpeg to skip instantly
-                video.src = `/api/streaming/video/${MEDIA_HASH}?start=${Math.floor(targetSecond)}`;
-                video.play();
-                playBtn.textContent = "pause";
-            }
-
-            // ── Controls visibility ───────────────────────────────────────────
-            let isPlaying = false;
-            let fadeTimeout = null;
-            let controlsShown = true;
-
-            function showControls() {
-                controlsOverlay.classList.remove("opacity-0", "pointer-events-none");
-                controlsOverlay.classList.add("opacity-100");
-                controlsShown = true;
-                playerContainer.style.cursor = "default";
-
-                if (!isPlaying) return;
-
-                clearTimeout(fadeTimeout);
-                fadeTimeout = setTimeout(() => {
-                    controlsOverlay.classList.remove("opacity-100");
-                    controlsOverlay.classList.add("opacity-0", "pointer-events-none");
-                    controlsShown = false;
-                    playerContainer.style.cursor = "none";
-                }, 3000);
-            }
-
-            playerContainer.addEventListener("mousemove", showControls);
-            playerContainer.addEventListener("click", showControls);
-
-            video.addEventListener("play", () => {
-                isPlaying = true;
-                showControls();
-            });
-            video.addEventListener("pause", () => {
-                isPlaying = false;
-                showControls();
-            });
-
-            // ── Play / Pause ──────────────────────────────────────────────────
-            function togglePlay() {
-                if (video.paused) {
-                    video.play();
-                    playBtn.textContent = "pause";
-                } else {
-                    video.pause();
-                    playBtn.textContent = "play_arrow";
-                }
-            }
-
-            playBtn.addEventListener("click", togglePlay);
-            middleArea.addEventListener("click", () => {
-                    if (controlsShown) {
-                        togglePlay()
-                    }
-                }
-            )
-            ;
-
-            // ── Volume ────────────────────────────────────────────────────────
-            let lastNonZeroVolume = video.volume > 0 ? video.volume : 0.5;
-            volumeSlider.value = String(video.muted ? 0 : video.volume);
-
-            function updateVolumeSliderVisuals() {
-                volumeSlider.style.setProperty("--volume", `${Number(volumeSlider.value) * 100}%`);
-            }
-
-            function updateVolumeIcon() {
-                if (video.muted || video.volume === 0) {
-                    volumeBtn.textContent = "volume_off";
-                    return;
-                }
-                volumeBtn.textContent = video.volume < 0.5 ? "volume_down" : "volume_up";
-            }
-
-            volumeBtn.addEventListener("click", () => {
-                if (video.muted || video.volume === 0) {
-                    video.muted = false;
-                    video.volume = lastNonZeroVolume > 0 ? lastNonZeroVolume : 0.5;
-                } else {
-                    lastNonZeroVolume = video.volume;
-                    video.muted = true;
-                }
-                updateVolumeIcon();
-                updateVolumeSliderVisuals();
-            });
-
-            volumeSlider.addEventListener("input", () => {
-                const v = Number(volumeSlider.value);
-                video.volume = v;
-                if (v > 0) {
-                    lastNonZeroVolume = v;
-                    video.muted = false;
-                } else {
-                    video.muted = true;
-                }
-                updateVolumeIcon();
-                updateVolumeSliderVisuals();
-            });
-
-            video.addEventListener("volumechange", () => {
-                volumeSlider.value = String(video.muted ? 0 : video.volume);
-                updateVolumeIcon();
-                updateVolumeSliderVisuals();
-            });
-
-            updateVolumeIcon();
-            updateVolumeSliderVisuals();
-
-            // ── Seek bar ──────────────────────────────────────────────────────
-            function getBufferedPercent() {
-                if (!video.duration || video.buffered.length === 0 || !REAL_DURATION) return 0;
-                let maxBuffered = 0;
-                for (let i = 0; i < video.buffered.length; i++) {
-                    if (video.buffered.end(i) > maxBuffered) maxBuffered = video.buffered.end(i);
-                }
-                // Add the offset to show absolute buffer position on the full timeline
-                const absoluteBuffered = currentStartOffset + maxBuffered;
-                return Math.min((absoluteBuffered / REAL_DURATION) * 100, 100);
-            }
-
-            function updateSeekBarVisuals() {
-                if (!REAL_DURATION) return;
-                const played = Math.min((Number(seekBar.value) / REAL_DURATION) * 100, 100);
-                seekBar.style.setProperty("--played", `${played}%`);
-                seekBar.style.setProperty("--buffered", `${Math.max(getBufferedPercent(), played)}%`);
-            }
-
-            video.addEventListener("loadedmetadata", () => {
-                controlsOverlay.style.display = "flex";
-                // Only override if the fetch failed and native duration works (rare for live MP4 streams)
-                if (!REAL_DURATION && isFinite(video.duration) && video.duration > 0) {
-                    REAL_DURATION = video.duration;
-                    seekBar.max = REAL_DURATION;
-                    durationTextElement.textContent = formatSeconds(REAL_DURATION);
-                }
-                updateSeekBarVisuals();
-            });
-
-            video.addEventListener("timeupdate", () => {
-                if (isDragging) return;
-
-                // The visual time is the actual live playback time PLUS where we started
-                const visualCurrentTime = video.currentTime + currentStartOffset;
-                currentTimeElement.textContent = formatSeconds(visualCurrentTime);
-                seekBar.value = visualCurrentTime;
-
-                updateSeekBarVisuals();
-            });
-
-            video.addEventListener("progress", updateSeekBarVisuals);
-
-            // While dragging, just update the text and visual slider immediately
-            seekBar.addEventListener("input", () => {
-                isDragging = true;
-                currentTimeElement.textContent = formatSeconds(parseFloat(seekBar.value));
-                updateSeekBarVisuals();
-            });
-
-            // When the mouse is released, trigger the server-side seek
-            seekBar.addEventListener("change", () => {
-                isDragging = false;
-                seekToTime(parseFloat(seekBar.value));
-            });
-
-            // ── Fullscreen ────────────────────────────────────────────────────
-            async function toggleFullscreen() {
-                if (!document.fullscreenElement) {
-                    playerContainer.requestFullscreen();
-                } else {
-                    document.exitFullscreen();
-                }
-            }
-
-            fullscreenBtn.addEventListener("click", toggleFullscreen);
-            middleArea.addEventListener("dblclick", toggleFullscreen);
-
-            document.addEventListener("fullscreenchange", () => {
-                fullscreenBtn.textContent = document.fullscreenElement ? "fullscreen_exit" : "fullscreen";
-            });
-
-            function togglePictureInPicture() {
-                if (document.pictureInPictureElement) {
-                    document.exitPictureInPicture();
-                    pictureInPictureButton.textContent = "pip";
-                } else {
-                    video.requestPictureInPicture();
-                    pictureInPictureButton.textContent = "pip_exit";
-                }
-            }
-
-            pictureInPictureButton.addEventListener("click", togglePictureInPicture);
-
-            // ── Keyboard shortcuts ────────────────────────────────────────────
-            document.addEventListener("keydown", e => {
-                if (e.code === "Space") {
-                    e.preventDefault();
-                    togglePlay();
-                    return;
-                }
-                if (e.code === "KeyF") {
-                    e.preventDefault();
-                    toggleFullscreen();
-                    return;
-                }
-                if (e.code === "ArrowRight") {
-                    e.preventDefault();
-                    seekToTime((video.currentTime + currentStartOffset) + 10);
-                    return;
-                }
-                if (e.code === "ArrowLeft") {
-                    e.preventDefault();
-                    seekToTime(Math.max((video.currentTime + currentStartOffset) - 10, 0));
-                }
-            });
-        });
+    <script th:inline="javascript">
+        const MEDIA_HASH = /*[[${media.defaultFile}]]*/ '';
+        const START_POSITION = /*[[${startPosition}]]*/ 0;
+    </script>
+    <script defer  th:src="@{/assets/scripts/mediaPlayerHLS.js}">
     </script>
 </head>
 <body class="m-0 h-dvh overflow-hidden">
 <div id="playerContainer" class="fixed inset-0 bg-black overflow-hidden group">
 
-    <video id="video" onerror="handleOnError()" class="absolute inset-0 w-full h-full object-contain"
+    <video id="video" onerror="handleOnError()" class="absolute inset-0 w-full h-full object-contain z-0"
            autoplay muted
            onplay="handleOnPlay(this)"></video>
 
+    <div id="loadingSpinner" style="display: flex"
+         class="z-10 absolute inset-0 pointer-events-none flex-col items-center justify-center">
+        <img class="object-cover brightness-50 absolute inset-0 w-full h-full"
+             th:src="|/api/artwork?type=background&id=${media.id}|" alt="">
+        <div class="relative gap-3 flex flex-col justify-center items-center w-full h-full">
+            <img class="xl:w-1/2 w-[95%] md:w-2/3"
+                 th:src="|/api/artwork?type=logo&id=${media.id}|" alt="">
+            <div class="relative flex flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-background-modal/95 p-8 shadow-2xl backdrop-blur light:bg-background-modal-light">
+                <div class="spinner"></div>
+                <p class="text-white text-lg font-medium">Loading...</p>
+            </div>
+        </div>
+    </div>
+
     <div id="controlsOverlay"
          style="display: none"
-         class="absolute inset-0 z-10 flex-col justify-between transition-opacity duration-500 opacity-100">
+         class="absolute inset-0 z-20 flex-col justify-between transition-opacity duration-500 opacity-0 pointer-events-none">
 
         <div class="bg-linear-to-b from-black to-transparent p-4 text-white">
             <p th:text="${media.title}"></p>
         </div>
 
         <div id="middleArea" class="flex-1 cursor-pointer flex flex-row items-center justify-center">
-            <div style="display: none" id="loading-spinner" class="z-50 absolute inset-0">
-                <img class="object-cover brightness-50 absolute inset-0 w-full h-full"
-                     th:src="|/api/artwork?type=background&id=${media.hash}|" alt="">
-                <div class="relative gap-3 flex flex-col justify-center items-center w-full h-full">
-                    <img class="xl:w-1/2 w-[95%] md:w-2/3"
-                         th:src="|/api/artwork?type=logo&id=${media.hash}|" alt="">
-                    <div class="relative flex flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-background-modal/95 p-8 shadow-2xl backdrop-blur light:bg-background-modal-light">
-                        <div class="spinner"></div>
-                        <p class="text-white text-lg font-medium">Loading...</p>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <div id="bottom-controls" class="bg-linear-to-t from-black to-transparent p-4 flex flex-col gap-3 text-white">
             <div class="w-full gap-2 flex flex-col">
                 <div class="w-full flex flex-row items-center justify-between font-mono text-sm">
-                    <p id="current-time-text">00:00</p>
-                    <p id="duration-text">00:00</p>
+                    <p id="currentTimeText">00:00</p>
+                    <p id="durationText">00:00</p>
                 </div>
                 <input type="range" id="seekBar" min="0" max="0" step="0.1" value="0"
                        class="player-range w-full cursor-pointer">
@@ -493,12 +95,12 @@
     <div style="display: none" id="error-screen" class="z-50 absolute inset-0">
         <div class="relative flex flex-row justify-center items-center w-full h-full">
             <img class="object-cover brightness-50 absolute inset-0 w-full h-full"
-                 th:src="|/api/artwork?type=background&id=${media.hash}|" alt="">
+                 th:src="|/api/artwork?type=background&id=${media.id}|" alt="">
             <div class="relative flex w-full max-w-xl flex-col items-center justify-center gap-2 rounded-2xl border border-white/10 bg-background-modal/95 p-6 shadow-2xl backdrop-blur light:bg-background-modal-light md:p-8">
                 <p class="text-2xl text-white text-center"
                    th:text="|Oops, There was an error playing this ${media.type.singular}!|"></p>
                 <p class="text-xl text-zinc-400">You can try to download it instead.</p>
-                <a th:href="|/api/streaming/video/${media.hash}|"
+                <a th:href="|/api/streaming/video/${media.id}|"
                    class="px-5 mt-4 cursor-pointer rounded-lg bg-primary py-3 font-black text-white shadow-sm transition hover:brightness-110 active:brightness-95 light:text-primary-400">Download</a>
             </div>
         </div>
