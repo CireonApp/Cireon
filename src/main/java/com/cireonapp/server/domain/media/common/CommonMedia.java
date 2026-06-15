@@ -4,6 +4,7 @@ import com.cireonapp.server.domain.media.source.SourceType;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+import java.util.Set;
 
 public class CommonMedia {
     private final SourceType sourceType;
@@ -32,4 +33,8 @@ public class CommonMedia {
     public long getCreated() {
         return created;
     }
+
+    public static final Set<String> SUPPORTED_FORMATS = Set.of(
+            "mp4", "mkv", "avi", "mov", "wmv", "flv", "mpeg", "mpg", "webm"
+    );
 }

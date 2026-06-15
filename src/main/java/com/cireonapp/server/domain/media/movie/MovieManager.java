@@ -84,9 +84,6 @@ public class MovieManager {
         return Databases.movieRepository.find(Filter.ALL);
     }
 
-    private static final Set<String> SUPPORTED_FORMATS = Set.of(
-            "mp4", "mkv", "avi", "mov", "wmv", "flv", "mpeg", "mpg", "webm"
-    );
 
 
     public static void handleMovieSourceUpdate(Source source) {
