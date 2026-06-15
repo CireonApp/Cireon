@@ -9,8 +9,13 @@ public class DataDirHelper {
         return APP_DIR.resolve("data");
     }
 
+    public static Path getPluginsDir() {
+        return APP_DIR.resolve("plugins");
+    }
+
     public static void initializeDataDir() {
         Path dataDir = getDataDir();
+        Path pluginsDir = getPluginsDir();
         if (!dataDir.toFile().exists()) {
             dataDir.toFile().mkdirs();
         }
@@ -20,7 +25,6 @@ public class DataDirHelper {
             contentDir.toFile().mkdirs();
         }
 
-        Path pluginsDir = dataDir.resolve("plugins");
         if (!pluginsDir.toFile().exists()) {
             pluginsDir.toFile().mkdirs();
         }
