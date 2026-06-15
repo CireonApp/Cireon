@@ -1,71 +1,96 @@
 package com.cireonapp.server.domain.media.movie;
 
 import com.cireonapp.server.domain.media.common.CommonMedia;
+import com.cireonapp.server.domain.media.common.VideoMediaFile;
 import com.cireonapp.server.domain.media.source.SourceType;
 import org.dizitart.no2.repository.annotations.Id;
 
-import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 
 public class Movie extends CommonMedia {
-    /**
-     * First and last 4mb of a file + file size.
-     */
+
     @Id
-    private String hash;
-    private Path filePath;
+    private String id;
     private MovieMetadata metadata;
     private MovieMetadata overrides;
+    private List<VideoMediaFile> files;
+    private boolean hasFiles;
 
-    public void merge(Movie newData) {
-        if(newData == null) return;
-        // hash should not be possible to change.
-        if (newData.filePath != null) {
-            this.filePath = newData.filePath;
-        }
+    /**
+     * update movie metadata and overrides with non-null values from the source. This allows for partial updates to the movie's metadata and overrides without overwriting existing values with nulls.
+     * This WILL NOT update tehe files of the movie. You should handle it seperatly.
+     */
+    public void merge(Movie source) {
+        if (source == null) return;
         //update overrides and metadata internally in their own class.
-        if (newData.metadata != null) {
-            this.metadata.merge(newData.metadata);
+        if (source.metadata != null) {
+            this.metadata.merge(source.metadata);
         }
-        if (newData.overrides != null) {
-            this.metadata.merge(newData.overrides);
+        if (source.overrides != null) {
+            this.metadata.merge(source.overrides);
         }
     }
 
-    public Movie(String hash, Path filePath, MovieMetadata metadata) {
-        super(SourceType.MOVIE);
-        this.hash = hash;
-        this.filePath = filePath;
-        this.metadata = metadata;
+    public void addFile(VideoMediaFile file) {
+        for (VideoMediaFile existingFile : this.files) {
+            if (existingFile.getHash().equals(file.getHash())) {
+                existingFile.merge(file);
+                this.hasFiles = !this.files.isEmpty();
+                return;
+            }
+        }
+        this.files.add(file);
+        this.hasFiles = !this.files.isEmpty();
+    }
+
+    public void removeFile(String hash) {
+        this.files.removeIf(file -> file.getHash().equals(hash));
+        this.hasFiles = !this.files.isEmpty();
+    }
+
+
+    public VideoMediaFile getFileByHash(String hash) {
+        for (VideoMediaFile existingFile : this.files) {
+            if (existingFile.getHash().equals(hash)) {
+                return existingFile;
+            }
+        }
+        return null;
+    }
+
+    public boolean doesFileExist(String hash) {
+        for (VideoMediaFile existingFile : this.files) {
+            if (existingFile.getHash().equals(hash)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public Movie() {
         super(SourceType.MOVIE);
+        this.id = UUID.randomUUID().toString();
+        this.files = new ArrayList<>();
+        this.hasFiles = false;
     }
 
-    public String getHash() {
-        return hash;
+    public String getId() {
+        return id;
     }
 
-    public void setHash(String hash) {
-        this.hash = hash;
-    }
-
-    public Path getFilePath() {
-        return filePath;
-    }
-
-    public void setFilePath(Path filePath) {
-        this.filePath = filePath;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public MovieMetadata getOriginalMetadata() {
-        //merge with overrides to get the metadata that is overriden by the user instead of fetched data.
         return metadata;
     }
 
     public MovieMetadata getMetadata() {
-       if(this.overrides == null) return this.metadata;
+        if (this.overrides == null) return this.metadata;
         MovieMetadata clone = this.metadata.clone();
         clone.merge(this.overrides);
         return clone;
@@ -81,5 +106,22 @@ public class Movie extends CommonMedia {
 
     public void setOverrides(MovieMetadata overrides) {
         this.overrides = overrides;
+    }
+
+    public List<VideoMediaFile> getFiles() {
+        return files;
+    }
+
+    public void setFiles(List<VideoMediaFile> files) {
+        this.files = files;
+    }
+
+
+    public boolean isHasFiles() {
+        return hasFiles;
+    }
+
+    public void setHasFiles(boolean hasFiles) {
+        this.hasFiles = hasFiles;
     }
 }
