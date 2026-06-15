@@ -144,3 +144,80 @@ input[type=number] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
+
+
+.player-range,
+.volume-range {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 0.5rem;
+    border-radius: 9999px;
+    outline: none;
+}
+
+.player-range {
+    --played: 0%;
+    --buffered: 0%;
+    background: linear-gradient(
+            to right,
+            color-mix(in oklab, var(--color-primary) 95%, transparent) 0 var(--played, 0%),
+            rgba(255, 255, 255, 0.55) var(--played, 0%) var(--buffered, 0%),
+            rgba(255, 255, 255, 0.18) var(--buffered, 0%) 100%
+    );
+}
+
+.volume-range {
+    --volume: 0%;
+    background: linear-gradient(
+            to right,
+            color-mix(in oklab, var(--color-primary) 95%, transparent) 0 var(--volume, 0%),
+            rgba(255, 255, 255, 0.22) var(--volume, 0%) 100%
+    );
+}
+
+.player-range::-webkit-slider-thumb,
+.volume-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(15, 23, 42, 0.9);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1px 5px rgba(2, 6, 23, 0.45);
+    cursor: pointer;
+}
+
+.player-range::-moz-range-thumb,
+.volume-range::-moz-range-thumb {
+    width: 0.9rem;
+    height: 0.9rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(15, 23, 42, 0.9);
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 1px 5px rgba(2, 6, 23, 0.45);
+    cursor: pointer;
+}
+
+.player-range::-moz-range-track,
+.volume-range::-moz-range-track {
+    height: 0.5rem;
+    border-radius: 9999px;
+    background: transparent;
+}
+
+/* Loading spinner styles */
+.spinner {
+    width: 3rem;
+    height: 3rem;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
