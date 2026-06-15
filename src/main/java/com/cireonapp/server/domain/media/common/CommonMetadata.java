@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class CommonMetadata {
     @Id
-    private int id;
+    private String id;
     private String title;
     private String originalTitle;
     private String description;
@@ -20,7 +20,7 @@ public class CommonMetadata {
     private Long lastUpdated;
     private Long releaseDateTimestamp;
 
-    public CommonMetadata(int id, String title, String originalTitle, String description, Artwork artworks, int runtime, Set<Genres> genres, Set<String> alternativeTitles, boolean adult, String tagline, long lastUpdated) {
+    public CommonMetadata(String id, String title, String originalTitle, String description, Artwork artworks, int runtime, Set<Genres> genres, Set<String> alternativeTitles, boolean adult, String tagline, long lastUpdated) {
         this.id = id;
         this.title = title;
         this.originalTitle = originalTitle;
@@ -118,26 +118,11 @@ public class CommonMetadata {
         this.tagline = tagline;
     }
 
-    @Override
-    public String toString() {
-        return "MovieMetadata{" +
-                "title='" + title + '\'' +
-                ", originalTitle='" + originalTitle + '\'' +
-                ", description='" + description + '\'' +
-                ", artworks=" + artworks +
-                ", runtime=" + runtime +
-                ", genres=" + genres +
-                ", alternativeTitles=" + alternativeTitles +
-                ", adult=" + adult +
-                ", lastUpdated=" + lastUpdated +
-                '}';
-    }
-
-    public int getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(String id) {
         this.id = id;
     }
 
